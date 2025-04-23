@@ -1,33 +1,45 @@
-import { View, Text, ScrollView } from "react-native";
-
-export default function Home() {
-  return (
-    <ScrollView showsVerticalScrollIndicator={false} className="flex-1 bg-white px-4 pt-8">
-      
-      {/* Horizontal Section */}
-      <Text className="text-xl font-bold mb-2 text-gray-800">Horizontal</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {[...Array(10)].map((_, index) => (
-          <View
-            key={index}
-            className="w-40 h-24 bg-gray-300 rounded-lg mr-4 justify-center items-center"
-          >
-            <Text className="text-gray-600">Item {index + 1}</Text>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Vertical Section */}
-      <Text className="text-xl font-bold mt-8 mb-2 text-gray-800">Vertical</Text>
-      {[...Array(10)].map((_, index) => (
-        <View
-          key={index}
-          className="w-full h-24 bg-gray-300 rounded-lg mb-4 justify-center items-center"
-        >
-          <Text className="text-gray-600">Item {index + 1}</Text>
-        </View>
-      ))}
-
-    </ScrollView>
-  );
-}
+[{
+	"resource": "/c:/Users/Nam Anh/Desktop/Mobile/BTL/RecycleApp/app/(tabs)/home.tsx",
+	"owner": "typescript",
+	"code": "7016",
+	"severity": 8,
+	"message": "Could not find a declaration file for module 'react-native-snap-carousel'. 'c:/Users/Nam Anh/Desktop/Mobile/BTL/RecycleApp/node_modules/react-native-snap-carousel/src/index.js' implicitly has an 'any' type.\n  Try `npm i --save-dev @types/react-native-snap-carousel` if it exists or add a new declaration (.d.ts) file containing `declare module 'react-native-snap-carousel';`",
+	"source": "ts",
+	"startLineNumber": 36,
+	"startColumn": 22,
+	"endLineNumber": 36,
+	"endColumn": 50
+},{
+	"resource": "/c:/Users/Nam Anh/Desktop/Mobile/BTL/RecycleApp/app/(tabs)/home.tsx",
+	"owner": "typescript",
+	"code": "7031",
+	"severity": 8,
+	"message": "Binding element 'onDone' implicitly has an 'any' type.",
+	"source": "ts",
+	"startLineNumber": 59,
+	"startColumn": 23,
+	"endLineNumber": 59,
+	"endColumn": 29
+},{
+	"resource": "/c:/Users/Nam Anh/Desktop/Mobile/BTL/RecycleApp/app/(tabs)/home.tsx",
+	"owner": "typescript",
+	"code": "7031",
+	"severity": 8,
+	"message": "Binding element 'item' implicitly has an 'any' type.",
+	"source": "ts",
+	"startLineNumber": 63,
+	"startColumn": 25,
+	"endLineNumber": 63,
+	"endColumn": 29
+},{
+	"resource": "/c:/Users/Nam Anh/Desktop/Mobile/BTL/RecycleApp/app/(tabs)/home.tsx",
+	"owner": "typescript",
+	"code": "18047",
+	"severity": 8,
+	"message": "'carouselRef.current' is possibly 'null'.",
+	"source": "ts",
+	"startLineNumber": 89,
+	"startColumn": 28,
+	"endLineNumber": 89,
+	"endColumn": 47
+}]

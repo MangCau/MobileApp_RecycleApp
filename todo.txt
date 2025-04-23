@@ -1,0 +1,2 @@
+- date type and choose option type in register form
+- validate in FE for login and register

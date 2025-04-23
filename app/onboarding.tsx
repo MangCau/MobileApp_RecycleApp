@@ -1,28 +1,158 @@
-import { router } from "expo-router"
-import { SafeAreaView, Text, TouchableOpacity, View } from "react-native"
-import Swiper from "react-native-swiper"
 
-const onboarding = () => {
-    return (
-        <Swiper loop={false} showsPagination={true}>
-            <SafeAreaView className="flex-1 justify-center items-center bg-white">
-                <Text className="text-center text-3xl font-bold text-indigo-600 mb-4">👋 Hi Mom, onboarding screen 1!</Text>
-                <Text className="text-center text-lg text-gray-500">Swipe to continue</Text>
-            </SafeAreaView>
+import React, { useRef, useState } from 'react';
+import {View, Text, Image, StyleSheet, FlatList, Dimensions, TouchableOpacity, NativeScrollEvent, NativeSyntheticEvent,} from 'react-native';
+import { useRouter } from "expo-router";
 
-            <SafeAreaView className="flex-1 bg-white">
-                {/* Text centered in the flex space */}
-                <View className="flex-1 justify-center items-center">
-                    <Text className="text-center text-3xl font-bold text-indigo-600 mb-4">👋 Hi Mom, onboarding screen 2!</Text>
-                </View>
-                
-                {/* Button at the bottom with some padding */}
-                <TouchableOpacity onPress={() => router.replace('/(tabs)/home')} className="w-[90%] bg-blue-500 rounded-lg py-4 items-center self-center mb-8">
-                    <Text className="text-lg text-white font-bold">Start</Text>
-                </TouchableOpacity>
-            </SafeAreaView>
-        </Swiper>
-    )
-}
+const { width } = Dimensions.get('window');
 
-export default onboarding
+const slides = [
+  {
+    key: '1',
+    image: require('../assets/images/onboarding1.png'),
+    title: 'Welcome to Recycle App!',
+    description: 'Chào mừng bạn đến với Recycle App, nền tảng giúp bạn phân loại rác dễ dàng, tìm địa điểm thu gom',
+  },
+  {
+    key: '2',
+    image: require('../assets/images/onboarding2.png'),
+    title: 'Why Recycle?',
+    description: 'Mỗi hành động tái chế nhỏ đều góp phần bảo vệ môi trường!\n Giảm rác thải, tiết kiệm tài nguyên và giữ cho Trái Đất xanh hơn.',
+  },
+  {
+    key: '3',
+    image: require('../assets/images/onboarding3.png'),
+    title: 'Get Started!',
+    description: 'Bạn đã sẵn sàng?\n Hãy tham gia cộng đồng tái chế ngay hôm nay!',
+  },
+];
+
+const OnboardingScreen = ({ onDone }: { onDone: () => void }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / width);
+    setCurrentIndex(index);
+  };
+
+  const router = useRouter();
+  const handleNext = () => {
+    if (currentIndex < slides.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
+    } else {
+        router.push("./screen/login");
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={slides}
+        ref={flatListRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        renderItem={({ item }) => (
+          <View style={styles.slide}>
+            <Image source={item.image} style={styles.image} resizeMode="contain" />
+            <Text style={styles.title}>
+                {item.key === '2' ? (
+                    <>
+                    <Text style={{ color: '#000' }}>Why</Text>
+                    <Text style={{ color: '#067F38' }}> Recycle</Text>
+                    <Text style={{ color: '#000' }}>?</Text>
+                    </>
+                ) : (
+                    item.title
+                )}
+            </Text>
+
+            <Text style={styles.description}>{item.description}</Text>
+          </View>
+        )}
+        keyExtractor={(item) => item.key}
+      />
+
+      <View style={styles.footer}>
+        <View style={styles.dots}>
+          {slides.map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                { opacity: i === currentIndex ? 1 : 0.3 },
+              ]}
+            />
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleNext}>
+          <Text style={styles.buttonText}>
+            {currentIndex === slides.length - 1 ? 'Bắt đầu' : 'Tiếp tục'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export default OnboardingScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  slide: {
+    width,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: '#ffffff',
+  },
+  image: {
+    width: '100%',
+    height: 250,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#067F38',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  description: {
+    fontSize: 18,
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    alignItems: 'center',
+  },
+  dots: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#34A262',
+    marginHorizontal: 5,
+  },
+  button: {
+    backgroundColor: '#34A262',
+    paddingVertical: 14,
+    paddingHorizontal: 80,
+    borderRadius: 30,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
