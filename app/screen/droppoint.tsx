@@ -5,7 +5,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text>Schedule</Text>
+        <Text>Droppint</Text>
       </ScrollView>
 
       <View style={styles.footer}>
