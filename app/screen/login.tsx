@@ -12,7 +12,7 @@ export default function LoginScreen() {
   const handleLogin = () => {
     // Implement login logic here
     if (phoneNumber === '0123456789' && password === 'password') {
-      router.push('/home');
+      router.push('/screen/homepage');
     } else {
       Alert.alert('Đăng nhập thất bại', 'Số điện thoại hoặc mật khẩu không đúng!');
     }

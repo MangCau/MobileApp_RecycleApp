@@ -6,7 +6,7 @@ export default function HomeScreen() {
           <View style={styles.container}>
                       
                       <View style={styles.content}>
-                        <Text>Homepage</Text>
+                        <Text>Shopping</Text>
                       </View>
           
                       {/* Menu bar */}
