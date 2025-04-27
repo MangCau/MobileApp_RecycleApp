@@ -84,7 +84,10 @@ export default function HomeScreen() {
           </View>
         </View>
 
-
+        <TouchableOpacity style={styles.viewOrdersButton} onPress={() => router.push('/screen/order_history')}>
+          <Text style={styles.viewOrdersText}>Xem đơn thu gom</Text>
+          <Icon name="chevron-right" size={14} color="#067F38" />
+        </TouchableOpacity>
 
         <View style={styles.greetingWrapper}>
           <Image
@@ -228,5 +231,18 @@ const styles = StyleSheet.create({
     borderColor: '#B0E8BC',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  viewOrdersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+    paddingVertical: 10,
+  },
+  viewOrdersText: {
+    color: '#067F38',
+    fontSize: 16,
+    fontWeight: '500',
+    marginRight: 5,
   },
 });
