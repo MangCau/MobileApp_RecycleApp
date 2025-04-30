@@ -82,12 +82,18 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Text style={styles.iconLabel}>Điểm thu gom</Text>
           </View>
+          <View style={styles.iconItem}>
+            <TouchableOpacity style={styles.iconCircle} onPress={() => router.push('/screen/order_history')}>
+              <Icon name="list-alt" size={20} color="#B0E8BC" />
+            </TouchableOpacity>
+            <Text style={styles.iconLabel}>Đơn thu gom</Text>
+          </View>
         </View>
 
-        <TouchableOpacity style={styles.viewOrdersButton} onPress={() => router.push('/screen/order_history')}>
+        {/* <TouchableOpacity style={styles.viewOrdersButton} onPress={() => router.push('/screen/order_history')}>
           <Text style={styles.viewOrdersText}>Xem đơn thu gom</Text>
           <Icon name="chevron-right" size={14} color="#067F38" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <View style={styles.greetingWrapper}>
           <Image
@@ -138,7 +144,7 @@ const styles = StyleSheet.create({
     height: 200,
     alignSelf: 'center',
     marginBottom: 2,
-    marginTop: 80,
+    marginTop: 30,
   },
   imageWrapper: {
     alignSelf: 'center',
@@ -165,7 +171,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   statisticTable: {
-    marginTop: 20,
+    marginTop: 30,
     paddingHorizontal: 10,
   },
   statisticRow: {
