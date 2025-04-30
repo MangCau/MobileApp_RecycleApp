@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TextInput} from 'react-native';
+import React, { useState } from 'react';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router'; 
 import DroppointCard from '../components/droppointCard';
@@ -25,6 +26,7 @@ const droppoints = [
 ];
 
 export default function HomeScreen() {
+  const [search, setSearch] = useState('');
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -37,6 +39,8 @@ export default function HomeScreen() {
             placeholder="Tìm kiếm"
             placeholderTextColor="#aaa"
             style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
           />
         </View>
       </ImageBackground>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 
-// Define the types for the stats object
 interface Stats {
   points: number;
   kg: number;
@@ -11,7 +10,7 @@ interface Stats {
 // Update the interface for ProfileHeader props
 interface ProfileHeaderProps {
   name: string;
-  id: number; // id is now a number
+  id: number; 
   stats: Stats;
 }
 

@@ -7,10 +7,16 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [secureText, setSecureText] = useState(true);
+  
   const router = useRouter();
 
   const handleLogin = () => {
     // Implement login logic here
+
+    console.log('phone:', phoneNumber);
+    console.log('pass:', password);
+
     if (phoneNumber === '0123456789' && password === 'password') {
       router.push('/screen/homepage');
     } else {
@@ -54,8 +60,11 @@ export default function LoginScreen() {
                 placeholderTextColor="#999"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
+                secureTextEntry={secureText}
                 />
+                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                                  <Icon name={secureText ? "eye" : "eye-slash"} size={20} />
+                                </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
