@@ -1,4 +1,3 @@
-
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Image, TouchableOpacity, Alert } from 'react-native';
 import MenuBar from '../components/menubar';
 import ProfileHeader from '../components/profileHeader';
@@ -70,7 +69,7 @@ export default function Management() {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => {}}>
+      <TouchableOpacity onPress={() => router.push('/screen/shoppingbag')}>
         <View style={styles.manageCard}>
           <Icon name="shopping-cart" size={20} color="#067F38" />
           <Text style={styles.textCard}>Giỏ hàng</Text>
@@ -78,7 +77,7 @@ export default function Management() {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => {}}>
+      <TouchableOpacity onPress={() => router.push('/screen/gift')}>
         <View style={styles.manageCard}>
           <Icon name="gift" size={20} color="#067F38" />
           <Text style={styles.textCard}>Quà đã đổi</Text>
