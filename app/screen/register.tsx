@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, 
         ScrollView, KeyboardAvoidingView, Platform, Modal, Pressable, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -31,9 +33,7 @@ export default function LoginScreen() {
 
   const router = useRouter();
 
-  const handleRegister = () => {
-    
-    // Implement registration logic
+  const handleRegister = async () => {
 
     console.log('Name:', name);
     console.log('Gender:', gender);
@@ -65,12 +65,28 @@ export default function LoginScreen() {
       return;
     }
 
-    Alert.alert('Thành công', 'Đăng ký thành công, hãy đăng nhập lại.', [
-      {
-        text: 'OK',
-        onPress: () => router.push('/screen/login'),
-      },
-    ]);
+    try {
+      await axios.post(API_ENDPOINTS.AUTH.REGISTER, {
+        email: email,
+        password: password,
+        name: name,
+        tel: phoneNumber,
+        dob: birthDate,
+        address: location,
+        gender: gender,
+        //Nếu mở rộng để có phần của bên thu gom cần truyền role = "COLLECTOR"
+      });
+
+      Alert.alert('Thành công', 'Đăng ký thành công, hãy đăng nhập lại.', [
+        {
+          text: 'OK',
+          onPress: () => router.push('/screen/login'),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Register error:', error?.response?.data || error.message);
+      Alert.alert('Đăng ký thất bại', error?.response?.data?.message || 'Đã có lỗi xảy ra');
+    }
   };
 
   const goToLogin = () => {

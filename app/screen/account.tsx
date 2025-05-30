@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Pressable, Modal, Alert } from 'react-native';
 import MenuBar from '../components/menubar';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -6,23 +9,19 @@ import { useRouter } from 'expo-router';
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-//TODO: fetch data information account here (get by ID, phonenumber)
-const data = ['Mr.Recycle', 'Nam', '19/09/1999', '0123456789', 'mrecycle@gmail.com', '123/123/123', 'password'];
 
 
 export default function HomeScreen() {
   const router = useRouter();
 
-  const [name, setName] = useState(data[0]);
-  const [gender, setGender] = useState(data[1]);
-  const [phoneNumber, setPhoneNumber] = useState(data[3]);
-  const [email, setEmail] = useState(data[4]);
-  const [location, setLocation] = useState(data[5]);
-  const [password, setPassword] = useState(data[6]);
-  const [birthDate, setBirthDate] = useState(() => {
-    const [day, month, year] = data[2].split('/').map(Number);
-    return new Date(year, month - 1, day); // month is 0-based
-  });
+  const [name, setName] = useState('');
+  const [gender, setGender] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [location, setLocation] = useState('');
+  const [password, setPassword] = useState('');
+  const [birthDate, setBirthDate] = useState(new Date(2000, 0, 1));
+  const [originalUser, setOriginalUser] = useState<any>(null);
   
   const [secureText, setSecureText] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -44,8 +43,52 @@ export default function HomeScreen() {
   };
 
   //edit account
-  const [day, month, year] = data[2].split('/').map(Number);
-  const originalBirthDate = new Date(year, month - 1, day);
+  //const [day, month, year] = data[2].split('/').map(Number);
+  //const originalBirthDate = new Date(year, month - 1, day);
+
+  const fetchUserInfo = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      if (!token) {
+        Alert.alert('Lỗi', 'Không tìm thấy token.');
+        return;
+      }
+
+      const response = await axios.get(API_ENDPOINTS.USER.GET_BY_ID(userId), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const user = response.data;
+
+      setName(user.name || '');
+      setGender(user.gender || '');
+      setPhoneNumber(user.tel || '');
+      setEmail(user.email || '');
+      setLocation(user.address || '');
+      setBirthDate(new Date(user.dob || '2000-01-01'));
+      setPassword(user.password || '');
+
+      setOriginalUser({
+        name: user.name || '',
+        gender: user.gender || '',
+        tel: user.tel || '',
+        email: user.email || '',
+        address: user.address || '',
+        dob: new Date(user.dob || '2000-01-01'),
+        password: user.password || ''
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin người dùng:', error);
+      Alert.alert('Lỗi', 'Không thể lấy thông tin người dùng.');
+    }
+  };
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
 
   const handleSave = () => {
     if (!checkForChanges()) {
@@ -63,20 +106,41 @@ export default function HomeScreen() {
     );
   };
 
-  const saveData = () => {
-    //TODO: do logic save edit account here, dưới chỉ là đại đại :v
-    console.log('Name:', name);
-    console.log('Gender:', gender);
-    console.log('Phone Number:', phoneNumber);
-    console.log('Email:', email);
-    console.log('Password:', password);
-    console.log('Birth Date:', birthDate?.toISOString());
+  const saveData = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      await axios.put(API_ENDPOINTS.USER.UPDATE(userId), {
+        name,
+        tel: phoneNumber,
+        email,
+        address: location,
+        dob: birthDate.toISOString(),
+        gender,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    // Now switch back to edit mode
-    setIsEditable(false);
+      Alert.alert('Thành công', 'Cập nhật thông tin thành công.');
+      setIsEditable(false);
+      setOriginalUser({
+        name,
+        gender,
+        tel: phoneNumber,
+        email,
+        address: location,
+        dob: birthDate,
+        password
+      });
+    } catch (error) {
+      console.error('Lỗi khi cập nhật:', error);
+      Alert.alert('Lỗi', 'Cập nhật không thành công.');
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     Alert.alert(
       'Xác nhận xóa',
       'Bạn có chắc chắn muốn xóa tài khoản không?',
@@ -85,9 +149,13 @@ export default function HomeScreen() {
         {
           text: 'Xóa',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Add real delete logic here (e.g., API call, logout, etc.)
-            console.log('Tài khoản đã bị xóa');
+          onPress: async () => {
+            const token = await AsyncStorage.getItem('access_token');
+            const userId = await AsyncStorage.getItem('user_id');
+            await axios.delete(API_ENDPOINTS.USER.DELETE(userId), {
+              headers: { Authorization: `Bearer ${token}` },
+          });
+            await AsyncStorage.removeItem('access_token');
             router.replace('/screen/login');
           }
         }
@@ -97,16 +165,15 @@ export default function HomeScreen() {
 
   // Logic to check if there are any changes
   const checkForChanges = () => {
-    const [day, month, year] = data[2].split('/').map(Number);
-    const originalBirthDate = new Date(year, month - 1, day);
+    if (!originalUser) return false;
+
     return (
-      name !== data[0] ||
-      gender !== data[1] ||
-      phoneNumber !== data[3] ||
-      email !== data[4] ||
-      location !== data[5] ||
-      password !== data[6] ||
-      birthDate.getTime() !== originalBirthDate.getTime()
+      name !== originalUser.name ||
+      gender !== originalUser.gender ||
+      phoneNumber !== originalUser.tel ||
+      email !== originalUser.email ||
+      location !== originalUser.address ||
+      birthDate.getTime() !== new Date(originalUser.dob).getTime()
     );
   };
 
@@ -243,7 +310,7 @@ export default function HomeScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={secureText}
-                  editable={isEditable}
+                  editable={false}
                 />
                 <TouchableOpacity onPress={() => setSecureText(!secureText)}>
                   <Icon name={secureText ? "eye" : "eye-slash"} size={20} />

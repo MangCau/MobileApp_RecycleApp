@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -11,18 +14,31 @@ export default function LoginScreen() {
   
   const router = useRouter();
 
-  const handleLogin = () => {
-    // Implement login logic here
-
-    console.log('phone:', phoneNumber);
-    console.log('pass:', password);
-
-    if (phoneNumber === '0123456789' && password === 'password') {
-      router.push('/screen/homepage');
-    } else {
-      Alert.alert('Đăng nhập thất bại', 'Số điện thoại hoặc mật khẩu không đúng!');
+  const handleLogin = async () => {
+    if (!phoneNumber || !password) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin!');
+      return;
     }
-  };
+
+    try {
+      const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, {
+        tel: phoneNumber,
+        password: password,
+      });
+
+    const { access_token, refresh_token, user } = response.data;
+
+    await AsyncStorage.setItem('access_token', access_token);
+    await AsyncStorage.setItem('refresh_token', refresh_token);
+    await AsyncStorage.setItem('user_id', user.toString());
+
+    Alert.alert('Thành công', 'Đăng nhập thành công!');
+    router.push('/screen/homepage');
+  } catch (error: any) {
+    console.error('Login error:', error?.response?.data || error.message);
+    Alert.alert('Đăng nhập thất bại', error?.response?.data?.message || 'Đã có lỗi xảy ra');
+  }
+};
 
   const goToRegister = () => {
     router.push('/screen/register');

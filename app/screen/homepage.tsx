@@ -1,23 +1,78 @@
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MenuBar from '../components/menubar';
 import Instruction from '../components/instruction_recycle';
 import { useRouter } from 'expo-router';
 
+type RecycleStat = {
+  category: string;
+  totalKg: number;
+  percentage: number;
+};
+
 export default function HomeScreen() {
   const router = useRouter();
+  const [totalWeight, setTotalWeight] = useState(0);
+  const [statisticsData, setStatisticsData] = useState<RecycleStat[]>([]);
 
-  const statisticsData = [ 
-    //fetch data
-    { material: 'Nhựa', percent: 2, weight: 2 },
-    { material: 'Nhôm', percent: 5, weight: 3 },
-    { material: 'Thủy tinh', percent: 5, weight: 10 },
-    { material: 'Giấy', percent: 3, weight: 4 },
-  ];
+  const [loading, setLoading] = useState(true);
 
-  const totalWeight = statisticsData.reduce((sum, item) => sum + item.weight, 0);
+  const fetchRecycleStatistics = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      if (!token) {
+        Alert.alert('Lỗi', 'Không tìm thấy token.');
+        return;
+      }
+      if (!userId) throw new Error('User ID not found');
 
-  
+      const response = await axios.get(API_ENDPOINTS.USER.GET_STAT(userId), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = response.data;
+      setStatisticsData(data);
+
+      const total = data.reduce((sum: any, item: { totalKg: any; }) => sum + item.totalKg, 0);
+      setTotalWeight(total);
+    } catch (error) {
+      console.error('Failed to fetch recycle statistics:', error);
+      Alert.alert('Lỗi', 'Không thể tải dữ liệu thống kê.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecycleStatistics();
+  }, []);
+
+  const adjustedStatistics = React.useMemo(() => {
+    if (statisticsData.length === 0) return [];
+
+    const adjusted = statisticsData.map((item) => ({
+      ...item,
+      percentage: Math.round(Number(item.percentage)),
+    }));
+    const totalBeforeLast = adjusted
+      .slice(0, -1)
+      .reduce((sum, item) => sum + Math.round(Number(item.percentage)), 0);
+
+    adjusted[adjusted.length - 1] = {
+      ...adjusted[adjusted.length - 1],
+      percentage: 100 - totalBeforeLast,
+    };
+
+    return adjusted;
+  }, [statisticsData]);
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -39,19 +94,19 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.statisticTable}>
-          {statisticsData.map((item, index) => (
+          {adjustedStatistics.map((item, index) => (
             <View key={index} style={styles.statisticRow}>
               <View style={[styles.statisticCell, { flex: 0.5 }]}>
                 <Icon name="circle" size={14} color="#B0E8BC" />
               </View>
               <View style={[styles.statisticCell, { flex: 2 }]}>
-                <Text style={styles.statisticText}>{item.material}</Text>
+                <Text style={styles.statisticText}>{item.category}</Text>
               </View>
               <View style={[styles.statisticCell, { flex: 1 }]}>
-                <Text style={styles.statisticText}>{item.percent}%</Text>
+                <Text style={styles.statisticText}>{item.percentage}%</Text>
               </View>
               <View style={[styles.statisticCell, { flex: 1 }]}>
-                <Text style={styles.statisticText}>{item.weight}kg</Text>
+                <Text style={styles.statisticText}>{item.totalKg}kg</Text>
               </View>
             </View>
           ))}
@@ -144,17 +199,18 @@ const styles = StyleSheet.create({
     height: 200,
     alignSelf: 'center',
     marginBottom: 2,
-    marginTop: 30,
+    marginTop: -20,
   },
   imageWrapper: {
     alignSelf: 'center',
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: -40,
   },
   totalImage: {
-    width: 200,
-    height: 200,
+    width: 140,
+    height: 140,
   },
   textOverlay: {
     position: 'absolute',
@@ -171,14 +227,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   statisticTable: {
-    marginTop: 30,
+    marginTop: 20,
     paddingHorizontal: 10,
   },
   statisticRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 5,
+    paddingVertical: 3,
   },
   statisticCell: {
     flex: 1,
@@ -190,7 +246,7 @@ const styles = StyleSheet.create({
   greetingWrapper: {
     position: 'relative',
     width: '100%',
-    height: 200, // Adjust based on your image
+    height: 150, // Adjust based on your image
     marginBottom: 20,
 
     justifyContent: 'center',
@@ -217,7 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 20,
-    marginTop: 40,
+    marginTop: 30,
   },
   
   iconItem: {
@@ -225,13 +281,13 @@ const styles = StyleSheet.create({
   },
   
   iconLabel: {
-    marginTop: 6,
+    marginTop: 4,
     fontSize: 14,
     color: '#067F38',
   },
   iconCircle: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
     borderRadius: 25,
     borderWidth: 2,
     borderColor: '#B0E8BC',
