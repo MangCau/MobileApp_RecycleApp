@@ -67,6 +67,30 @@ export default function Layout() {
             }}
           />
           <Stack.Screen
+            name="screen/shopping"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="screen/shoppingbag"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="screen/shoppingbagsuccess"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="screen/shoppinngdetail"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
             name="screen/order_history"
             options={{
               headerShown: false,

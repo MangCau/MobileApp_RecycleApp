@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,12 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  Dimensions
+  Dimensions,
+  Alert
 } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router';
@@ -21,67 +25,90 @@ const categories = [
   { key: 'health', label: 'Sức khỏe', icon: 'heartbeat', color: ['#A9FFD6', '#5CFCB0'] },
 ];
 
-const products = [
-  {
-    id: 1,
-    name: 'Túi xách tái chế',
-    image: require('../../assets/images/shopping_card.png'),
-    points: 129,
-    favorite: true,
-  },
-  {
-    id: 2,
-    name: 'Túi xách tái chế',
-    image: require('../../assets/images/shopping_card.png'),
-    points: 129,
-    favorite: false,
-  },
-  {
-    id: 3,
-    name: 'Túi xách tái chế',
-    image: require('../../assets/images/shopping_card.png'),
-    points: 129,
-    favorite: false,
-  },
-  {
-    id: 4,
-    name: 'Túi xách tái chế',
-    image: require('../../assets/images/shopping_card.png'),
-    points: 129,
-    favorite: false,
-  },
-];
-
 const screenWidth = Dimensions.get('window').width;
+const cardWidth = (screenWidth - 48) / 2;
 
 export default function ShoppingScreen() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const renderCategory = (cat: typeof categories[number], idx: number) => (
+  const fetchRewards = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!userId || !token) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
+        return;
+      }
+
+      const response = await axios.get(API_ENDPOINTS.REWARD.GET_ALL + `?userId=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const { data } = response.data;
+      setProducts(data);
+    } catch (error: any) {
+      console.error('Lỗi lấy danh sách phần thưởng:', error?.response?.data || error.message);
+      Alert.alert('Lỗi', error?.response?.data?.message || 'Không thể tải danh sách phần thưởng.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRewards();
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    const list = Array.isArray(products) ? products : [];
+
+    const filtered = list.filter(item => {
+      const matchCategory = selectedCategory ? item.type === selectedCategory : true;
+      const matchSearch = search.trim()
+        ? item.name.toLowerCase().includes(search.trim().toLowerCase())
+        : true;
+      return matchCategory && matchSearch;
+    });
+
+    return filtered.sort((a, b) => (b.isFavorite === true ? 1 : 0) - (a.isFavorite === true ? 1 : 0));
+  }, [products, selectedCategory, search]);
+
+  const renderCategory = (cat: typeof categories[number]) => (
     <TouchableOpacity
       key={cat.key}
       style={styles.categoryItem}
-      onPress={() => setSelectedCategory(cat.key)}
+      onPress={() => setSelectedCategory(cat.key === selectedCategory ? null : cat.key)}
       activeOpacity={0.7}
     >
-      <View style={[styles.categoryIcon, { backgroundColor: cat.color[0] }]}> 
+      <View style={[styles.categoryIcon, { backgroundColor: cat.color[0] }]}>
         <Icon name={cat.icon} size={24} color="#fff" />
       </View>
-      <Text style={styles.categoryLabel}>{cat.label}</Text>
+      <Text style={[styles.categoryLabel, selectedCategory === cat.key && { color: '#000' }]}>
+        {cat.label}
+      </Text>
     </TouchableOpacity>
   );
 
   const renderProduct = ({ item }: { item: typeof products[number] }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.productCard}
-      onPress={() => router.push('/screen/shoppingdetail')}
+      onPress={() => router.push({ pathname: '/screen/shoppingdetail', params: { id: item.id } })}
     >
       <View style={styles.productImageWrapper}>
-        <Image source={item.image} style={styles.productImage} resizeMode="cover" />
-        <TouchableOpacity style={styles.favoriteIcon}>
-          <Icon name="heart" size={20} color={item.favorite ? '#B5A9FF' : '#ccc'} />
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.productImage}
+          resizeMode="contain"
+        />
+        <TouchableOpacity 
+          style={styles.favoriteIcon}
+          onPress={() => handleToggleFavorite(item.id)}
+        >
+          <Icon name="heart" size={20} color={item.isFavorite ? '#B5A9FF' : '#ccc'} />
         </TouchableOpacity>
       </View>
       <View style={styles.productInfo}>
@@ -91,10 +118,42 @@ export default function ShoppingScreen() {
     </TouchableOpacity>
   );
 
+  const handleToggleFavorite = async (rewardId: number) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!userId || !token) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
+        return;
+      }
+
+      const res = await fetch(API_ENDPOINTS.REWARD.TOGGLE_FAVORITE(userId, rewardId), {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      setProducts((prevProducts) =>
+        prevProducts.map((product) =>
+          product.id === rewardId
+            ? { ...product, isFavorite: data.status === 'added' }
+            : product
+        )
+      );
+    } catch (error) {
+      console.error('Lỗi toggle yêu thích:', error);
+      Alert.alert('Lỗi', 'Không thể cập nhật yêu thích.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Search Bar + Cart Icon */}
+        {/* Tìm kiếm + Giỏ hàng */}
         <View style={styles.searchRow}>
           <View style={styles.searchBar}>
             <Icon name="search" size={18} color="#888" style={{ marginLeft: 10 }} />
@@ -111,20 +170,21 @@ export default function ShoppingScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Categories */}
+        {/* Danh mục */}
         <View style={styles.categoryRow}>
           {categories.map(renderCategory)}
         </View>
 
-        {/* Product List */}
+        {/* Danh sách sản phẩm */}
         <FlatList
-          data={products}
+          data={filteredProducts}
           renderItem={renderProduct}
           keyExtractor={item => item.id.toString()}
           numColumns={2}
           columnWrapperStyle={styles.productRow}
           contentContainerStyle={{ paddingBottom: 20 }}
           scrollEnabled={false}
+          
         />
       </ScrollView>
       <View style={styles.footer}>
@@ -134,18 +194,9 @@ export default function ShoppingScreen() {
   );
 }
 
-const cardWidth = (screenWidth - 48) / 2;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    paddingTop: 30,
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  scrollContent: { paddingTop: 30, paddingHorizontal: 12, paddingBottom: 10 },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,23 +270,27 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     overflow: 'hidden',
+    alignItems: 'center',
   },
   productImage: {
     width: '100%',
-    height: 110,
+    height: 120,
+    marginTop: 24,
+    resizeMode: 'contain',
   },
   favoriteIcon: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 3,
+    alignSelf: 'center',
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 4,
+    zIndex: 2,
     elevation: 2,
   },
   productInfo: {
     paddingHorizontal: 10,
-    paddingTop: 8,
+    paddingTop: 5,
   },
   productName: {
     fontSize: 15,

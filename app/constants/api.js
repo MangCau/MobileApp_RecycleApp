@@ -34,5 +34,16 @@ export const API_ENDPOINTS = {
     CREATE: `${API_URL}/api/v1/types`,
     UPDATE: (id) => `${API_URL}/api/v1/types/${id}`,
     DELETE: (id) => `${API_URL}/api/v1/types/${id}`,
+  },
+  REWARD: {
+    GET_ALL: `${API_URL}/api/v1/rewards`,
+    GET_BY_ID: (id, userid) => `${API_URL}/api/v1/rewards/${id}?userId=${userid}`,
+    CREATE: `${API_URL}/api/v1/rewards`,
+    UPDATE: (id) => `${API_URL}/api/v1/rewards/${id}`,
+    DELETE: (id) => `${API_URL}/api/v1/rewards/${id}`,
+    GET_BY_TYPE: (type, page = 1, limit = 10) =>
+      `${API_URL}/api/v1/rewards/type/${type}?page=${page}&limit=${limit}`,
+    TOGGLE_FAVORITE: (userId, rewardId) =>
+      `${API_URL}/api/v1/rewards/favorite?userId=${userId}&rewardId=${rewardId}`,
   }
 };

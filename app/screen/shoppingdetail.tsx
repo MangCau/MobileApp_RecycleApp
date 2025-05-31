@@ -1,24 +1,70 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState,useEffect } from 'react';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MenuBar from '../components/menubar';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const product = {
-  id: 1,
-  name: 'TÚI XÁCH TÁI CHẾ',
-  image: require('../../assets/images/shopping_card.png'),
-  points: 129,
-  favorite: false,
-  description:
-    'Túi tone là một trào lưu thời trang đang ngày càng được yêu thích vì độ tiện lợi của mẫu túi này. Bạn có thể tận dụng chiếc túi tone để đi chợ, đi học, đi làm,... Tuy nhiên, việc mua túi mới có thể gây lãng phí và tăng thêm lượng rác thải từ quần áo cũ. Vậy tại sao chúng ta không tận dụng những quần jeans cũ và biến chúng thành những chiếc túi tone độc đáo?',
+type Product = {
+  id: number;
+  name: string;
+  imageUrl: any;
+  points: number;
+  favorite: boolean;
+  description: string;
 };
-
 const screenWidth = Dimensions.get('window').width;
 
 export default function ShoppingDetail() {
-  const [isFavorite, setIsFavorite] = useState(product.favorite);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { id } = useLocalSearchParams();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  const fetchProduct = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!userId || !token) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
+        return;
+      }
+
+      const res = await axios.get(API_ENDPOINTS.REWARD.GET_BY_ID(id, userId), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProduct(res.data);
+      setIsFavorite(res.data.favorite);
+    } catch (error) {
+      console.error('Error fetching reward:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProduct();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#067F38" />
+      </View>
+    );
+  }
+
+  if (!product) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Không tìm thấy sản phẩm.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -36,7 +82,7 @@ export default function ShoppingDetail() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Product Image */}
         <View style={styles.imageWrapper}>
-          <Image source={product.image} style={styles.productImage} resizeMode="cover" />
+          <Image source={{ uri: product.imageUrl }} style={styles.productImage} resizeMode="cover" />
         </View>
 
         {/* Product Info */}
@@ -181,6 +227,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#eee',
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
