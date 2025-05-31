@@ -1,52 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router';
 
+interface RecycleItem {
+  id: number;
+  name: string;
+  description: string;
+  image: any;
+}
+
 export default function ScheduleScreen() {
   const router = useRouter();
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [recycleItems, setRecycleItems] = useState<RecycleItem[]>([]);
   
-  // Data cho các loại vật liệu tái chế
-  const recycleItems = [
-    { 
-      id: 1, 
-      title: 'Nhựa', 
-      description: 'Chai nhựa, túi nhựa, thùng nhựa,...',
-      image: require('../../assets/images/logo2.png')
-    },
-    { 
-      id: 2, 
-      title: 'Nhựa', 
-      description: 'Chai nhựa, túi nhựa, thùng nhựa,...',
-      image: require('../../assets/images/logo2.png')
-    },
-    { 
-      id: 3, 
-      title: 'Nhựa', 
-      description: 'Chai nhựa, túi nhựa, thùng nhựa,...',
-      image: require('../../assets/images/logo2.png')
-    },
-    { 
-      id: 4, 
-      title: 'Nhựa', 
-      description: 'Chai nhựa, túi nhựa, thùng nhựa,...',
-      image: require('../../assets/images/logo2.png')
-    },
-    { 
-      id: 5, 
-      title: 'Nhựa', 
-      description: 'Chai nhựa, túi nhựa, thùng nhựa,...',
-      image: require('../../assets/images/logo2.png')
-    },
-    { 
-      id: 6, 
-      title: 'Nhựa', 
-      description: 'Chai nhựa, túi nhựa, thùng nhựa,...',
-      image: require('../../assets/images/logo2.png')
-    },
-  ];
+  const fetchRecycleTypes = async (setRecycleItems: (items: RecycleItem[]) => void) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const response = await axios.get(`${API_ENDPOINTS.TYPE.GET_ALL}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const types = response.data.data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        image: require('../../assets/images/logo2.png'),
+      }));
+
+      setRecycleItems(types);
+    } catch (error) {
+      console.error('Error fetching recycle items:', error);
+    }
+  };
+  
 
   const toggleItemSelection = (id: number) => {
     if (selectedItems.includes(id)) {
@@ -55,6 +49,10 @@ export default function ScheduleScreen() {
       setSelectedItems([...selectedItems, id]);
     }
   };
+
+  useEffect(() => {
+    fetchRecycleTypes(setRecycleItems);
+  }, []);
 
   const hasSelectedItems = selectedItems.length > 0;
 
@@ -78,6 +76,7 @@ export default function ScheduleScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <View style={{ width: 30 }} />
         <Text style={styles.headerTitle}>TÁI CHẾ</Text>
         <View style={styles.notificationContainer}>
           <Icon name="list-alt" size={24} color="#B0E8BC" />
@@ -112,7 +111,7 @@ export default function ScheduleScreen() {
                   style={styles.cardImage}
                   resizeMode="contain"
                 />
-                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardTitle}>{item.name}</Text>
                 <Text style={styles.cardDescription}>{item.description}</Text>
                 {isSelected && (
                   <View style={styles.checkmark}>
@@ -123,6 +122,7 @@ export default function ScheduleScreen() {
             );
           })}
         </View>
+      </ScrollView>
 
         <TouchableOpacity 
           style={[
@@ -134,7 +134,6 @@ export default function ScheduleScreen() {
         >
           <Text style={styles.recycleButtonText}>TÁI CHẾ NGAY</Text>
         </TouchableOpacity>
-      </ScrollView>
 
       <View style={styles.footer}>
         <MenuBar />
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    marginTop: 40,
+    marginTop: 30,
   },
   headerTitle: {
     fontSize: 24,
@@ -257,11 +256,12 @@ const styles = StyleSheet.create({
   },
   recycleButton: {
     backgroundColor: '#34A262',
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderRadius: 30,
     alignItems: 'center',
     marginTop: 10,
     marginHorizontal: 20,
+    marginBottom: 10,
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',

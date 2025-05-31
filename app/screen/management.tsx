@@ -1,13 +1,42 @@
 import { View, Text, StyleSheet, ScrollView, ImageBackground, Image, TouchableOpacity, Alert } from 'react-native';
 import MenuBar from '../components/menubar';
+import  { useState, useEffect } from 'react';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import ProfileHeader from '../components/profileHeader';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter } from 'expo-router'; 
 
 export default function Management() {
-  //fetch data profile header
-
   const router = useRouter();
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const fetchUserInfo = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!token || !userId) {
+        Alert.alert('Lỗi', 'Không tìm thấy token hoặc userId');
+        return;
+      }
+
+      const response = await axios.get(API_ENDPOINTS.USER.GET_BY_ID(userId), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error('Lỗi lấy thông tin người dùng:', error);
+      Alert.alert('Lỗi', 'Không thể lấy thông tin người dùng');
+    }
+  };
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -51,12 +80,17 @@ export default function Management() {
           style={styles.bgImage}
           resizeMode="cover"
         >
-          {/* fetch info  */}
-          <ProfileHeader
-            name="Mr Recycle"
-            id = {623611}
-            stats={{ points: 123, kg: 50, orders: 20 }}
-          />
+          {userInfo && (
+            <ProfileHeader
+              name={userInfo.name}
+              id={userInfo.id}
+              stats={{
+                points: userInfo.totalPoints ?? 0,
+                orders: userInfo.totalOrders ?? 0,
+                kg: userInfo.totalKg ?? 0,
+              }}
+            />
+          )}
         </ImageBackground>
       </View>
 
