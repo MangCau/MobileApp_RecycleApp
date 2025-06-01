@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
   FlatList,
   SafeAreaView
 } from 'react-native';
+import { API_ENDPOINTS } from '../constants/api';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +26,9 @@ type WeightRecord = {
 
 export default function CreateOrderScreen() {
   const router = useRouter();
+  const [collectionPoints, setCollectionPoints] = useState<{ id: number, address: string }[]>([]);
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  const [showPointsModal, setShowPointsModal] = useState(false);
   const params = useLocalSearchParams();
   let selectedItems: number[] = [];
 
@@ -66,18 +72,39 @@ export default function CreateOrderScreen() {
   // State cho hình ảnh
   const [image, setImage] = useState<string | null>(null);
 
-  // Dữ liệu mẫu điểm thu gom
-  const [collectionPoints, setCollectionPoints] = useState([
-    { id: 1, address: 'LimLoop: 140/9/4 đường số 12, P.Bình Hưng' },
-    { id: 2, address: 'LimLoop: 35 Nguyễn Văn Trỗi, P.10, Q.Phú Nhuận' },
-    { id: 3, address: 'LimLoop: 129 Lý Chính Thắng, P.7, Q.3' },
-  ]);
-  const [selectedPoint, setSelectedPoint] = useState(collectionPoints[0].id);
-  const [showPointsModal, setShowPointsModal] = useState(false);
-
   // State cho ghi chú
   const [note, setNote] = useState('');
+  const fetchCenters = async (
+    setCollectionPoints: React.Dispatch<React.SetStateAction<{ id: number, address: string }[]>>,
+    setSelectedPoint: React.Dispatch<React.SetStateAction<number | null>>
+  ) => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const res = await axios.get(API_ENDPOINTS.CENTER.GET_ALL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
+      const centers = res.data?.data || [];
+
+      const formatted = centers.map((center: any) => ({
+        id: center.id,
+        address: `${center.name}: ${center.address}`,
+      }));
+
+      setCollectionPoints(formatted);
+
+      if (formatted.length > 0) {
+        setSelectedPoint(prev => prev ?? formatted[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching centers:', error);
+    }
+  };
+  useEffect(() => {
+    fetchCenters(setCollectionPoints, setSelectedPoint);
+  }, []);
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,

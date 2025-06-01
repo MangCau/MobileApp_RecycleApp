@@ -64,6 +64,23 @@ export default function ShoppingBag() {
     }
   };
 
+  const handleRedeem = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      if (!token || !userId) return;
+
+      await axios.post(API_ENDPOINTS.ORDER.CREATE_REWARD(userId), {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      router.push('/screen/shoppingbagsuccess');
+    } catch (error) {
+      console.error('Failed to create reward order:', error);
+      alert('Đổi thưởng thất bại. Vui lòng thử lại sau.');
+    }
+  };
+
   const enoughPoints = userPoints >= cartSummary.totalPoints && cartSummary.items.length > 0;
   return (
     <View style={styles.container}>
@@ -140,9 +157,7 @@ export default function ShoppingBag() {
           <TouchableOpacity 
             style={[styles.redeemButton, !enoughPoints && { backgroundColor: '#E0E0E0' }]}
             disabled={!enoughPoints}
-            onPress={() => {
-              if (enoughPoints) router.push('/screen/shoppingbagsuccess');
-            }}
+            onPress={handleRedeem}
           >
             <Text style={styles.redeemText}>ĐỔI THƯỞNG</Text>
           </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,12 @@ import {
   SafeAreaView,
   ScrollView,
   FlatList,
-  Image
+  Image,
+  Alert
 } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import MenuBar from '../components/menubar';
@@ -20,6 +24,15 @@ type Order = {
   code: string;
   datetime: string;
   status: OrderStatus;
+};
+export const formatDateTime = (isoString: string): string => {
+  const date = new Date(isoString);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${hours}:${minutes} ${day}/${month}/${year}`;
 };
 
 // Component hiển thị khi không có lịch sử đơn hàng
@@ -41,21 +54,37 @@ export default function OrderHistoryScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<OrderStatus>('pending');
   const [hasOrders, setHasOrders] = useState(true); // Đổi thành true để hiển thị danh sách đơn hàng mẫu
-
-  // Dữ liệu mẫu cho các đơn thu gom
-  const orders: Order[] = [
-    { id: '1', code: 'LimLoop #123', datetime: '12:01 04/03/2025', status: 'completed' },
-    { id: '2', code: 'LimLoop #234', datetime: '12:01 04/03/2025', status: 'completed' },
-    { id: '3', code: 'LimLoop #456', datetime: '12:01 04/03/2025', status: 'completed' },
-    { id: '4', code: 'LimLoop #567', datetime: '12:01 05/03/2025', status: 'pending' },
-    { id: '5', code: 'LimLoop #678', datetime: '12:01 06/03/2025', status: 'pending' },
-    { id: '6', code: 'LimLoop #789', datetime: '12:01 07/03/2025', status: 'cancelled' },
-    { id: '7', code: 'LimLoop #890', datetime: '12:01 08/03/2025', status: 'cancelled' },
-  ];
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [userId, setUserId] = useState<number>(1);
 
   // Lọc đơn thu gom theo trạng thái hiện tại
   const filteredOrders = orders.filter(order => order.status === activeTab);
+  const fetchOrders = async (userId: number, status: OrderStatus) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      if (!token || !userId) {
+        Alert.alert('Lỗi', 'Bạn cần đăng nhập để xem lịch sử đơn hàng.');
+        return;
+      }
+      const res = await axios.get(API_ENDPOINTS.ORDER.GET_HIS_REWARD(userId, status));
+      const formatted = res.data.map((order: any) => ({
+        id: order.id.toString(),
+        code: order.code,
+        datetime: formatDateTime(order.date),
+        status: order.status.toLowerCase(),
+      }));
+      setOrders(formatted);
+      setHasOrders(formatted.length > 0);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setHasOrders(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchOrders(userId, activeTab);
+  }, [activeTab]);
   // Hàm chuyển đổi trạng thái sang tiếng Việt
   const getStatusText = (status: OrderStatus): string => {
     switch (status) {
@@ -85,7 +114,7 @@ export default function OrderHistoryScreen() {
           pathname: "/screen/order_detail_view" as any,
           params: {
             id: item.id,
-            code: item.code.split('#')[1] || item.code,
+            code: item.code.includes('#') ? item.code : `LimLoop #${item.code}`,
             date: item.datetime,
             status: item.status,
             deliveryMethod: parseInt(item.id) % 2 === 0 ? 'pickup' : 'selfDelivery'

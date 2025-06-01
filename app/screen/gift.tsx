@@ -1,49 +1,89 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ImageBackground } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ImageBackground, ActivityIndicator } from 'react-native';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router';
 
-const ordersExample = [
-  {
-    id: '1',
-    code: '#ABC',
-    date: '12:01 04/03/2025',
-    status: 'Đã hoàn thành',
-  },
-  {
-    id: '2',
-    code: '#ABC',
-    date: '12:01 04/03/2025',
-    status: 'Đã hoàn thành',
-  },
-  {
-    id: '3',
-    code: '#ABC',
-    date: '12:01 04/03/2025',
-    status: 'Đã hoàn thành',
-  },
-  {
-    id: '4',
-    code: '#ABC',
-    date: '12:01 04/03/2025',
-    status: 'Đã hoàn thành',
-  },
-];
+type Order = {
+  id: string;
+  code: string;
+  datetime: string;
+  status: OrderStatus;
+};
 
+type OrderStatus = 'pending' | 'completed' | 'cancelled';
 export default function GiftScreen() {
   // Toggle between [] and ordersExample to test both states
-  const [orders, setOrders] = useState(ordersExample); // [] for empty
-  const [tab, setTab] = useState('done'); // 'progress', 'done', 'cancel'
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [tab, setTab] = useState<OrderStatus>('pending');
   const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const renderOrder = ({ item }: { item: typeof ordersExample[number] }) => (
-    <TouchableOpacity onPress={() => router.push({ pathname: '/screen/giftdetail', params: { id: item.id, code: item.code, date: item.date, status: item.status } })}>
+  useEffect(() => {
+    fetchRewardOrders(tab);
+  }, [tab]);
+
+   const fetchRewardOrders = async (status: OrderStatus) => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      if (!token) {
+        console.error('Token not found');
+        return;
+      }
+      const response = await axios.get(`${API_ENDPOINTS.ORDER.GET_HIS_REWARD(userId, status)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const formattedOrders: Order[] = response.data.map((order: { id: number; code?: string; date: string; status: string }) => ({
+        id: order.id.toString(),
+        code: `#${order.code || order.id}`,
+        datetime: formatDate(order.date),
+        status: mapStatusText(order.status),
+      }));
+      setOrders(formattedOrders);
+    } catch (error) {
+      console.error('Lỗi khi tải đơn đổi thưởng:', error);
+      setOrders([]);
+    }finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const mo = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${h}:${m} ${d}/${mo}/${y}`;
+  };
+
+  const mapStatusText = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Đang tiến hành';
+      case 'completed':
+        return 'Đã hoàn thành';
+      case 'cancelled':
+        return 'Đã huỷ';
+      default:
+        return status;
+    }
+  };
+
+  const renderOrder = ({ item }: { item: Order }) => (
+    <TouchableOpacity onPress={() => router.push({ pathname: '/screen/giftdetail', params: { id: item.id, code: item.code, date: item.datetime, status: item.status } })}>
       <ImageBackground source={require('../../assets/images/backgroundgift.png')} style={styles.orderCard} imageStyle={styles.orderCardBg}>
         <View style={styles.orderIcon}><Icon name="gift" size={24} color="#067F38" /></View>
         <View style={{ flex: 1 }}>
           <Text style={styles.orderCode}>{item.code}</Text>
-          <Text style={styles.orderDate}>{item.date}</Text>
+          <Text style={styles.orderDate}>{item.datetime}</Text>
         </View>
         <View style={styles.statusBox}><Text style={styles.statusText}>{item.status}</Text></View>
       </ImageBackground>
@@ -61,21 +101,32 @@ export default function GiftScreen() {
         <View style={{ width: 56 }} />
       </View>
       {/* Tabs */}
-      {orders.length > 0 && (
         <View style={styles.tabRow}>
-          <TouchableOpacity style={[styles.tabButton, tab === 'progress' && styles.tabActive]} onPress={() => setTab('progress')}>
-            <Text style={[styles.tabText, tab === 'progress' && styles.tabTextActive]}>Đang tiến hành</Text>
+          <TouchableOpacity
+            style={[styles.tabButton, tab === 'pending' && styles.tabActive]}
+            onPress={() => setTab('pending')}
+          >
+            <Text style={[styles.tabText, tab === 'pending' && styles.tabTextActive]}>Đang tiến hành</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.tabButton, tab === 'done' && styles.tabActive]} onPress={() => setTab('done')}>
-            <Text style={[styles.tabText, tab === 'done' && styles.tabTextActive]}>Đã hoàn thành</Text>
+          <TouchableOpacity
+            style={[styles.tabButton, tab === 'completed' && styles.tabActive]}
+            onPress={() => setTab('completed')}
+          >
+            <Text style={[styles.tabText, tab === 'completed' && styles.tabTextActive]}>Đã hoàn thành</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.tabButton, tab === 'cancel' && styles.tabActive]} onPress={() => setTab('cancel')}>
-            <Text style={[styles.tabText, tab === 'cancel' && styles.tabTextActive]}>Đã huỷ</Text>
+          <TouchableOpacity
+            style={[styles.tabButton, tab === 'cancelled' && styles.tabActive]}
+            onPress={() => setTab('cancelled')}
+          >
+            <Text style={[styles.tabText, tab === 'cancelled' && styles.tabTextActive]}>Đã huỷ</Text>
           </TouchableOpacity>
         </View>
-      )}
       {/* Content */}
-      {orders.length === 0 ? (
+      {loading ? (
+        <View style={styles.emptyWrapper}>
+          <ActivityIndicator size="large" color="#067F38" />
+        </View>
+      ) : orders.length === 0 ? (
         <View style={styles.emptyWrapper}>
           <Image source={require('../../assets/images/empty_bag.png')} style={styles.emptyImage} />
           <Text style={styles.emptyTitle}>Bạn chưa đổi phần quà nào</Text>
