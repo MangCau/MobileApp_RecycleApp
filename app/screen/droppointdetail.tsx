@@ -1,44 +1,126 @@
 import { useLocalSearchParams } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TouchableOpacity } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
+import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import React, { useState, useEffect } from 'react';
 
-const data = {
-    name: "LimLoop",
-    location: "123 Đường ABC, Quận Bình Thạnh, TP.HCM",
-    time: "8:00 - 17:00 từ Thứ 2 đến Thứ 7",
-    materials: ["Nhựa", "Nhôm", "Thủy Tinh"],
-    phonenumber: "0123 456 789",
-    email: "recycle@example.com",
-    moreinfo: "Vui lòng gọi điện trước khi đến.",
-    image: require('../../assets/images/droppoint.jpg') // replace with your image path
-  };
+interface WorkingTime {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface Contact {
+  tel?: string;
+  email?: string;
+  other?: string;
+}
+
+interface Center {
+  id: string;
+  name: string;
+  address: string;
+  imageUrl: string;
+  materials: Material[];
+  workingTimes: WorkingTime[];
+  contact: Contact;
+}
+interface Material {
+  name: string;
+  points: number;
+  isHazardous: boolean;
+}
 
 export default function DroppointDetail() {
-
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const [center, setCenter] = useState<Center | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const {
-        name,
-        location,
-        time,
-        materials,
-        phonenumber,
-        email,
-        moreinfo,
-        image
-      } = data;
+    const fetchCenterById = async (id: string) => {
+      try {
+        const token = await AsyncStorage.getItem('access_token');
+        const userId = await AsyncStorage.getItem('user_id');
+
+        if (!userId || !token) {
+          Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
+          return;
+        }
+        const res = await axios.get(API_ENDPOINTS.CENTER.GET_BY_ID(id));
+        return res.data;
+      } catch (error) {
+        console.error("Lỗi khi fetch center:", error);
+        throw error;
+      }
+    };
+
+    useEffect(() => {
+      if (!id) return;
+      const loadData = async () => {
+        try {
+          const data = await fetchCenterById(id as string);
+          setCenter(data);
+        } catch (error) {
+          console.error("Lỗi khi tải dữ liệu:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadData();
+    }, [id]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00bfff" />
+        <Text style={styles.loadingText}>Đang tải...</Text>
+      </View>
+    );
+  }
+  if (!center) return <Text>Không tìm thấy điểm thu gom.</Text>;
+
+  const { name, address, imageUrl, materials, contact, workingTimes } = center;
+
+  const dayMap: { [key: string]: string } = {
+    Monday: 'T2',
+    Tuesday: 'T3',
+    Wednesday: 'T4',
+    Thursday: 'T5',
+    Friday: 'T6',
+    Saturday: 'T7',
+    Sunday: 'CN',
+  };
+
+  const formattedTime = workingTimes
+    .map(w => {
+      const days = w.day.split('-').map(d => dayMap[d] || d).join(' - ');
+      const start = new Date(w.startTime).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const end = new Date(w.endTime).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `${days}: ${start} - ${end}`;
+    })
+    .join('\n');
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <ImageBackground
-                  source={image}
-                  style={styles.droppointImage}
-                  resizeMode="cover"
-                >
+                  source={imageUrl
+                    ? { uri: imageUrl }
+                    : require('../../assets/images/droppoint.jpg')}
+                    style={styles.droppointImage}
+                    resizeMode="cover"
+                  >
                     <TouchableOpacity style={styles.iconCircle} onPress={() => router.back()}>
                         <Icon name="chevron-left" size={20} color="#067F38" />
                     </TouchableOpacity>
@@ -58,12 +140,12 @@ export default function DroppointDetail() {
                                 source={require('../../assets/images/mapimg.png')}
                                 style={styles.mapImage}
                             />
-                            <Text style={styles.detailText} numberOfLines={4} ellipsizeMode="tail">{location}</Text>
+                            <Text style={styles.detailText} numberOfLines={4} ellipsizeMode="tail">{address}</Text>
                         </View>
                     </View>
                     <View style={styles.time}>
-                        <Text style={styles.titleText}>Thời gian</Text>
-                        <Text style={styles.detailText} numberOfLines={4} ellipsizeMode="tail">{time}</Text>
+                        <Text style={styles.titleText}>Thời gian mở cửa</Text>
+                        <Text style={styles.detailText} numberOfLines={4} ellipsizeMode="tail">{formattedTime}</Text>
                     </View>
                 </View>
                 <View style={styles.card}>
@@ -72,18 +154,18 @@ export default function DroppointDetail() {
                     <View style={styles.cardDetail}>
                         {materials.map((material, index) => (
                             <Text key={index} style={styles.cardDetailText}>
-                            {index + 1}. {material}
+                            {index + 1}. {material.name}
                             </Text>
                         ))}
                     </View>
                     <Text style={styles.titleText}>Thông tin liên hệ</Text>
                     <View style={styles.cardDetail}>
-                        <Text style={styles.cardDetailText}>Số điện thoại: {phonenumber}</Text>
-                        <Text style={styles.cardDetailText2}>Email: {email}</Text>
+                        <Text style={styles.cardDetailText}>Số điện thoại: {contact?.tel || 'Không có'}</Text>
+                        <Text style={styles.cardDetailText2}>Email: {contact?.email || 'Không có'}</Text>
                     </View>
                     <Text style={styles.titleText}>Thông tin khác</Text>
                     <View style={styles.cardDetail}>
-                        <Text style={styles.cardDetailText3}>{moreinfo}</Text>
+                        <Text style={styles.cardDetailText3}>{contact?.other || 'Không có'}</Text>
                     </View>
                     
                 </View>
@@ -193,4 +275,16 @@ const styles = StyleSheet.create({
     color: '#727171',
     marginBottom: 10,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#333',
+  },
 });
+

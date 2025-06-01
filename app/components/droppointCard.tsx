@@ -2,17 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
-
 type DroppointCardProps = {
     name: string;
     location: string;
-    time: string;
+    days: string;
     id: number;
+    imageUrl?: string;
 };
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function DroppointCard({ name, location, time, id }: DroppointCardProps) {
+export default function DroppointCard({ name, location, days, id, imageUrl }: DroppointCardProps) {
+
 
     const router = useRouter();
 
@@ -28,7 +29,11 @@ export default function DroppointCard({ name, location, time, id }: DroppointCar
         <TouchableOpacity onPress={handlePress} style={styles.droppointCard}>
             <View style={styles.imgPart}>
                 <Image
-                    source={require('../../assets/images/droppoint.jpg')}
+                    source={
+                        imageUrl
+                            ? { uri: imageUrl }
+                            : require('../../assets/images/droppoint.jpg')
+                    }   
                     style={styles.image}
                 />
             </View>
@@ -41,7 +46,7 @@ export default function DroppointCard({ name, location, time, id }: DroppointCar
                 </View>
                 <View style={styles.detail}>
                     <Icon name="clock-o" size={20} color="#9F9898" style={styles.icon} />
-                    <Text style={styles.detailText}>{time}</Text>
+                    <Text style={styles.detailText}>{days}</Text>
                 </View>
             </View>
         </TouchableOpacity>

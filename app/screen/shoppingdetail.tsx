@@ -50,6 +50,57 @@ export default function ShoppingDetail() {
     fetchProduct();
   }, []);
 
+  const handleToggleFavorite = async (rewardId: number) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!userId || !token) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
+        return;
+      }
+
+      const res = await fetch(API_ENDPOINTS.REWARD.TOGGLE_FAVORITE(userId, rewardId), {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      setIsFavorite(data.status === 'added');
+    } catch (error) {
+      console.error('Lỗi toggle yêu thích:', error);
+      Alert.alert('Lỗi', 'Không thể cập nhật yêu thích.');
+    }
+  };
+
+  const handleRedeem = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!userId || !token) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
+        return;
+      }
+
+      await axios.post(API_ENDPOINTS.CART.ADD(userId), {
+        rewardId: product?.id,
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert('Thành công', 'Sản phẩm đã được thêm vào giỏ!');
+      router.push('/screen/shoppingbag');
+    } catch (error) {
+      console.error('Lỗi đổi thưởng:', error);
+      Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ.');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -89,7 +140,7 @@ export default function ShoppingDetail() {
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <Text style={styles.productName}>{product.name}</Text>
-            <TouchableOpacity onPress={() => setIsFavorite(fav => !fav)}>
+            <TouchableOpacity onPress={() => handleToggleFavorite(product.id)}>
               <Icon name="heart" size={28} color={isFavorite ? '#B5A9FF' : '#ccc'} />
             </TouchableOpacity>
           </View>
@@ -100,7 +151,7 @@ export default function ShoppingDetail() {
 
       {/* Redeem Button */}
       <View style={styles.redeemWrapper}>
-        <TouchableOpacity style={styles.redeemButton}>
+        <TouchableOpacity style={styles.redeemButton} onPress={handleRedeem}>
           <Text style={styles.redeemText}>ĐỔI THƯỞNG</Text>
         </TouchableOpacity>
       </View>

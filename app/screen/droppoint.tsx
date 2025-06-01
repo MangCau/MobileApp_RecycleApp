@@ -1,32 +1,139 @@
-import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TextInput} from 'react-native';
-import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TextInput, Alert} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router'; 
 import DroppointCard from '../components/droppointCard';
 
-const droppoints = [
-  {
-    name: 'Eco Drop Zone 1',
-    location: '123 Green St, Eco City',
-    time: '8:00 AM - 5:00 PM',
-    id: 111,
-  },
-  {
-    name: 'Recycle Hub',
-    location: '456 Blue Ave, Green Town',
-    time: '9:00 AM - 6:00 PM',
-    id: 112,
-  },
-  {
-    name: 'Plastic Droppoint',
-    location: '789 Red Rd, Cleanville',
-    time: '7:30 AM - 4:00 PM',
-    id: 113,
-  },
-];
+const dayMap = {
+    Monday: 'T2',
+    Tuesday: 'T3',
+    Wednesday: 'T4',
+    Thursday: 'T5',
+    Friday: 'T6',
+    Saturday: 'T7',
+    Sunday: 'CN',
+} as const;
 
+type DayKey = keyof typeof dayMap;
+
+type CenterType = {
+  id: number;
+  name: string;
+  address: string;
+  imageUrl?: string;
+  days: string;
+};
+type WorkingDay = {
+  day: string;
+  startTime: string;
+  endTime: string;
+};
+type RawCenterType = {
+  id: number;
+  name: string;
+  address: string;
+  imageUrl?: string;
+  days: WorkingDay[];
+};
 export default function HomeScreen() {
   const [search, setSearch] = useState('');
+  const [centers, setCenters] = useState<CenterType[]>([]);
+  const [filteredCenters, setFilteredCenters] = useState<CenterType[]>([]);
+
+  
+  const fetchCenters = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+
+      if (!token || !userId) {
+        Alert.alert('Lỗi', 'Không tìm thấy token hoặc user ID');
+        throw new Error('Missing token or user ID');
+      }
+
+      const res = await axios.get(API_ENDPOINTS.CENTER.GET_ALL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error('Lỗi khi fetch centers:', error);
+      throw error;
+    }
+  };
+
+  const fetchAllCenters = async () => {
+    const result = await fetchCenters();
+    return result.data.map((center: RawCenterType): CenterType => ({
+      name: center.name,
+      address: center.address,
+      days: formatWorkingDays(center.days),
+      id: center.id,
+      imageUrl: center.imageUrl,
+    }));
+  };
+
+
+  const formatWorkingDays = (
+    days?: { day: string; startTime: string; endTime: string }[]
+  ): string => {
+    if (!Array.isArray(days)) return 'Không rõ thời gian';
+
+    const dayMap: Record<string, string> = {
+      Monday: 'T2',
+      Tuesday: 'T3',
+      Wednesday: 'T4',
+      Thursday: 'T5',
+      Friday: 'T6',
+      Saturday: 'T7',
+      Sunday: 'CN',
+    };
+
+    return days
+      .map(({ day, startTime, endTime }) => {
+        const startHour = new Date(startTime).getHours();
+        const endHour = new Date(endTime).getHours();
+
+        const parts = day
+          .split('-')
+          .map((d) => d.trim())
+          .map((d) => dayMap[d] || d);
+
+        const formattedDay = parts.join(' - ');
+        return `${formattedDay}: ${startHour}h-${endHour}h`;
+      })
+      .join(' | ');
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const formatted = await fetchAllCenters();
+        setCenters(formatted);
+      } catch (error) {
+        console.error('Failed to fetch centers:', error);
+      }
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (search.trim() === '') {
+      setFilteredCenters(centers);
+    } else {
+      const lowerSearch = search.toLowerCase();
+      const filtered = centers.filter(center =>
+        center.name.toLowerCase().includes(lowerSearch)
+      );
+      setFilteredCenters(filtered);
+    }
+  }, [search, centers]);
+
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -46,13 +153,14 @@ export default function HomeScreen() {
       </ImageBackground>
                 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {droppoints.map((item, index) => (
+        {filteredCenters.map((item, index) => (
           <DroppointCard
             key={index}
             name={item.name}
-            location={item.location}
-            time={item.time}
+            location={item.address}
+            days={item.days}
             id={item.id}
+            imageUrl={item.imageUrl}
           />
         ))}
       </ScrollView>

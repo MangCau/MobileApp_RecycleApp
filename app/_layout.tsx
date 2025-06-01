@@ -85,13 +85,25 @@ export default function Layout() {
             }}
           />
           <Stack.Screen
-            name="screen/shoppinngdetail"
+            name="screen/shoppingdetail"
             options={{
               headerShown: false,
             }}
           />
           <Stack.Screen
             name="screen/order_history"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="screen/gift"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="screen/giftdetail"
             options={{
               headerShown: false,
             }}

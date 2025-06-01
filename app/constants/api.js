@@ -1,6 +1,6 @@
 //export const API_URL = "https://mobile-app-sms0.onrender.com";
 // Nếu test trên điện thoại thật: dùng IP LAN của máy tính
- export const API_URL = "http://192.168.137.1:3000";
+ export const API_URL = "http://192.168.234.14:3000";
 
 // Định nghĩa các endpoint
 export const API_ENDPOINTS = {
@@ -45,5 +45,19 @@ export const API_ENDPOINTS = {
       `${API_URL}/api/v1/rewards/type/${type}?page=${page}&limit=${limit}`,
     TOGGLE_FAVORITE: (userId, rewardId) =>
       `${API_URL}/api/v1/rewards/favorite?userId=${userId}&rewardId=${rewardId}`,
-  }
+  },
+  CENTER: {
+    GET_ALL: `${API_URL}/api/v1/centers`,
+    GET_BY_ID: (id) => `${API_URL}/api/v1/centers/${id}`,
+    CREATE: `${API_URL}/api/v1/centers`,
+    UPDATE: (id) => `${API_URL}/api/v1/centers/${id}`,
+    DELETE: (id) => `${API_URL}/api/v1/centers/${id}`,
+  },
+  CART: {
+    ADD: (userId) => `${API_URL}/api/v1/rewards/cart?id=${userId}`,
+    INCREASE: (userId) => `${API_URL}/api/v1/rewards/increase/${userId}`,
+    DECREASE: (userId) => `${API_URL}/api/v1/rewards/decrease/${userId}`,
+    GET_ITEMS: (userId) => `${API_URL}/api/v1/rewards/cart?id=${userId}`,
+    GET_SUMMARY: (userId) => `${API_URL}/api/v1/rewards/${userId}/summary`,
+  },
 };
