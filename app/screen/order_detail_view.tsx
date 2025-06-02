@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,38 +8,28 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MenuBar from '../components/menubar';
 
+interface Material {
+  typeName: string;
+  quantity: number;
+}
 export default function OrderDetailViewScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   
   // Lấy thông tin đơn hàng từ params hoặc dùng giá trị mặc định
-  const orderId = params.id as string || '1';
-  const orderCode = params.code as string || '123';
-  const orderDate = params.date as string || '12:01 04/03/2025';
-  const orderStatus = params.status as string || 'pending';
-  const deliveryMethod = params.deliveryMethod as string || 'pickup'; // 'pickup' hoặc 'selfDelivery'
-  
-  // Dữ liệu chi tiết đơn hàng - trong thực tế sẽ lấy từ API/database
-  const orderDetails = {
-    address: 'ABCDEFGHIJK',
-    collectionTime: 'ABCDEFGHIJK',
-    materials: [
-      { name: 'Nhựa', weight: 2 },
-      { name: 'Thủy tinh', weight: 2 },
-    ],
-    sender: {
-      name: 'Mr ReCycle',
-      phone: '01234567',
-      address: 'ABCDEFG',
-      date: '06/03/2025',
-      time: '13h-17h',
-    },
-    totalPoints: '123P',
-  };
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const orderId = (params?.id as string) || '1';
+  const orderCode = (params?.code as string) || '123';
+  const orderDate = (params?.date as string) || '12:01 04/03/2025';
+  const orderStatus = (params?.status as string) || 'pending';
+  const deliveryMethod = (params?.deliveryMethod as string) || 'pickup'; // 'pickup' hoặc 'selfDelivery'
   
   // Chuyển đổi trạng thái sang text tiếng Việt
   const getStatusText = (status: string): string => {
@@ -72,9 +63,60 @@ export default function OrderDetailViewScreen() {
     router.back();
   };
   
+
+  const fetchOrderDetails = async () => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      if (!token) {
+        alert('Vui lòng đăng nhập');
+        return;
+      }
+
+      const res = await axios.get(API_ENDPOINTS.ORDER.GET_DETAIL_MATERIAL(orderId), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setOrderDetails(res.data); // giả sử API trả về đúng format
+    } catch (error) {
+      console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
+      alert('Không thể lấy dữ liệu đơn hàng.');
+    }
+  };
+
+  useEffect(() => {
+    if (orderId) {
+      fetchOrderDetails();
+    }
+  }, [orderId]);
   // Quyết định hiển thị thông tin người gửi dựa vào phương thức vận chuyển
   const shouldShowSenderInfo = deliveryMethod === 'pickup';
   
+  const formatWorkingDays = (
+  days?: { day: string; startTime: string; endTime: string }[]
+): string => {
+  if (!Array.isArray(days)) return 'Không rõ thời gian';
+
+  const dayMap: Record<string, string> = {
+    Monday: 'T2',
+    Tuesday: 'T3',
+    Wednesday: 'T4',
+    Thursday: 'T5',
+    Friday: 'T6',
+    Saturday: 'T7',
+    Sunday: 'CN',
+  };
+
+  return days
+    .map(({ day, startTime, endTime }) => {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      const formattedDay = dayMap[day] || day;
+      return `${formattedDay}: ${start.getHours()}h - ${end.getHours()}h`;
+    })
+    .join(' | ');
+};
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -111,7 +153,7 @@ export default function OrderDetailViewScreen() {
           {/* Thông tin điểm thu gom */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Thông tin điểm thu gom</Text>
-            
+            {orderDetails ? (
             <View style={styles.locationInfo}>
               <View style={styles.locationRow}>
                 <Icon name="map-marker" size={20} color="red" style={styles.locationIcon} />
@@ -125,26 +167,32 @@ export default function OrderDetailViewScreen() {
                 <Icon name="clock-o" size={20} color="red" style={styles.locationIcon} />
                 <View>
                   <Text style={styles.locationLabel}>Thời gian nhận</Text>
-                  <Text style={styles.locationValue}>{orderDetails.collectionTime}</Text>
+                  <Text style={styles.locationValue}>{formatWorkingDays(orderDetails.workingTimes)}</Text>
                 </View>
               </View>
-            </View>
+            </View>) : (
+              <Text>Đang tải thông tin điểm thu gom...</Text>
+            )}
           </View>
           
           {/* Thông tin đơn hàng */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Thông tin đơn hàng</Text>
             
-            {orderDetails.materials.map((material, index) => (
-              <View key={index} style={styles.materialRow}>
-                <Text style={styles.materialName}>{material.name}</Text>
-                <Text style={styles.materialWeight}>{material.weight}kg</Text>
-              </View>
-            ))}
+            {orderDetails?.materials && Array.isArray(orderDetails.materials) ? (
+              orderDetails.materials.map((material: Material, index: number) => (
+                <View key={index} style={styles.materialRow}>
+                  <Text style={styles.materialName}>{material.typeName}</Text>
+                  <Text style={styles.materialWeight}>{material.quantity}kg</Text>
+                </View>
+              ))
+            ) : (
+              <Text>Không có vật liệu trong đơn hàng.</Text>
+            )}
           </View>
           
           {/* Thông tin người gửi - chỉ hiển thị với phương thức thu gom tại nhà */}
-          {shouldShowSenderInfo && (
+          {deliveryMethod === 'pickup' && orderDetails?.sender && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Thông tin người gửi</Text>
               
@@ -166,12 +214,12 @@ export default function OrderDetailViewScreen() {
                 
                 <View style={styles.senderRow}>
                   <Text style={styles.senderLabel}>Ngày</Text>
-                  <Text style={styles.senderValue}>{orderDetails.sender.date}</Text>
+                  <Text style={styles.senderValue}>{orderDetails.receiveTime}</Text>
                 </View>
                 
                 <View style={styles.senderRow}>
                   <Text style={styles.senderLabel}>Thời gian</Text>
-                  <Text style={styles.senderValue}>{orderDetails.sender.time}</Text>
+                  <Text style={styles.senderValue}>{orderDetails.schedule}</Text>
                 </View>
               </View>
             </View>
@@ -180,16 +228,11 @@ export default function OrderDetailViewScreen() {
           {/* Tổng điểm nhận được */}
           <View style={styles.pointsContainer}>
             <Text style={styles.pointsText}>
-              Tổng điểm nhận được: {orderDetails.totalPoints}
+              Tổng điểm nhận được: {orderDetails?.totalPoints}
             </Text>
           </View>
           
-          {/* Nút hủy đơn - Chỉ hiển thị khi đơn hàng đang tiến hành */}
-          {orderStatus === 'pending' && (
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>HỦY</Text>
-            </TouchableOpacity>
-          )}
+
         </View>
       </ScrollView>
       

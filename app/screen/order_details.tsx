@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,24 @@ import {
   TextInput,
   ScrollView,
   Modal,
-  SafeAreaView
+  SafeAreaView,
+  Alert
 } from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import MenuBar from '../components/menubar';
-
+type Material = {
+  id: number;
+  title: string;
+  image: string | null;
+  weight: string;
+};
 export default function OrderDetailsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   
   // State quản lý phương thức vận chuyển
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'selfDelivery' | null>(null);
@@ -25,15 +35,20 @@ export default function OrderDetailsScreen() {
   const [address, setAddress] = useState('');
   const [date, setDate] = useState(new Date());
   const [timeSlot, setTimeSlot] = useState<'morning' | 'afternoon' | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerValue, setDatePickerValue] = useState(new Date());
-  
+  const [collectionPoint, setCollectionPoint] = useState<{
+    id: number;
+    name: string;
+    address: string;
+    time: string;
+  } | null>(null);
   // Kiểm tra xem đã nhập đủ thông tin chưa (cho thu gom tại nhà)
   const isPickupFormValid = name && phone && address && timeSlot;
   
   // Custom date picker with modal
   const [showDatePickerModal, setShowDatePickerModal] = useState(false);
-  
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('vi-VN', {
       day: '2-digit',
@@ -41,7 +56,106 @@ export default function OrderDetailsScreen() {
       year: 'numeric'
     });
   };
-  
+
+  const formatWorkingDays = (
+    days?: { day: string; startTime: string; endTime: string }[]
+  ): string => {
+    if (!Array.isArray(days)) return 'Không rõ thời gian';
+
+    const dayMap: Record<string, string> = {
+      Monday: 'T2',
+      Tuesday: 'T3',
+      Wednesday: 'T4',
+      Thursday: 'T5',
+      Friday: 'T6',
+      Saturday: 'T7',
+      Sunday: 'CN',
+    };
+
+    return days
+      .map(({ day, startTime, endTime }) => {
+        const startHour = new Date(startTime).getHours();
+        const endHour = new Date(endTime).getHours();
+
+        const parts = day
+          .split('-')
+          .map((d) => d.trim())
+          .map((d) => dayMap[d] || d);
+
+        const formattedDay = parts.join(' - ');
+        return `${formattedDay}: ${startHour}h-${endHour}h`;
+      })
+      .join(' | ');
+  };
+
+  const fetchUserInfo = async (id: string) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      if (!token) {
+        console.error('Không tìm thấy access token');
+        return;
+      }
+
+      const res = await axios.get(API_ENDPOINTS.USER.GET_BY_ID(id), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const user = res.data;
+      if (user) {
+        setName(user.name || '');
+        setPhone(user.tel || '');
+        setAddress(user.address || '');
+      } else {
+        console.error('Không tìm thấy thông tin người dùng');
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin người dùng:', error);
+    }
+  };
+
+  const fetchCollectionPoint = async (centerId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      if (!token) {
+        console.error('Không tìm thấy access token');
+        return;
+      }
+      const res = await axios.get(API_ENDPOINTS.CENTER.GET_BY_ID(centerId));
+      const center = res.data;
+
+      if (!center) {
+        console.error('Không tìm thấy thông tin center trong response:', res.data);
+        return;
+      }
+      setCollectionPoint({
+        id: center.id,
+        name: center.name,
+        address: center.address,
+        time: formatWorkingDays(center.workingTimes)
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin điểm thu gom:', error);
+    }
+  };
+  useEffect(() => {
+    if (params.centerId) {
+      fetchCollectionPoint(params.centerId as string);
+    }
+  }, [params.centerId]);
+  useEffect(() => {
+    const loadUserId = async () => {
+      const id = await AsyncStorage.getItem('user_id');
+      if (id) {
+        setUserId(id);
+      }
+    };
+    loadUserId();
+  }, []);
+  useEffect(() => {
+    if (deliveryMethod === 'pickup' && userId) {
+      fetchUserInfo(userId);
+    }
+  }, [deliveryMethod, userId]);
   // Các ngày cho custom date picker
   const generateDateOptions = () => {
     const options = [];
@@ -63,33 +177,75 @@ export default function OrderDetailsScreen() {
     setShowDatePickerModal(false);
   };
   
+  const extractTimeRange = (timeStr: string) => {
+    const parts = timeStr.split(':');
+    return parts.length > 1 ? parts.slice(1).join(':').trim() : timeStr;
+  };
   // Xử lý nút xác nhận
-  const handleConfirm = () => {
-    if (deliveryMethod === 'pickup' && !isPickupFormValid) {
-      return; // Không làm gì nếu form chưa hợp lệ
-    }
-    
-    // Chuẩn bị tham số để truyền sang trang xác nhận
-    const params: Record<string, string> = {
-      deliveryMethod: deliveryMethod || '',
-      totalWeight: '3' // Mặc định là 3kg
-    };
-    
-    if (deliveryMethod === 'pickup') {
-      params.name = name;
-      params.phone = phone;
-      params.address = address;
-      params.date = formatDate(date);
-      params.timeSlot = timeSlot || '';
-    } else {
-      params.pickupLocation = 'LimLoop: 140/9/4 đường số 12, P.Bình Hưng';
-    }
-    
-    // Chuyển sang trang xác nhận
-    router.push({
-      pathname: '/screen/confirmation',
-      params: params
-    });
+  const handleConfirm = async () => {
+    if (deliveryMethod === 'pickup' && !isPickupFormValid) return;
+    const schedule = timeSlot === 'morning' ? '8h-12h' : timeSlot === 'afternoon' ? '13h-17h' : '';
+    try {
+
+      const centerId = Number(params.centerId);
+      const rawData = Array.isArray(params.data) ? params.data[0] : params.data;
+      const data = JSON.parse(rawData);
+      const materials: Material[] = data.materials;
+      console.log(data?.points?.toString())
+      const items = materials.map((m): { typeName: string; quantity: number }  => ({
+        typeName: m.title,
+        quantity: Number(m.weight)
+      }));
+
+    const customerIdString = await AsyncStorage.getItem('user_id');
+    const customerId = customerIdString ? Number(customerIdString) : null;
+
+      const dto = {
+        customerId,
+        centerId,
+        transport: deliveryMethod,
+        status: 'pending',
+        items,
+        note: data.note || '',
+        receiveDate: date?.toISOString(),
+        schedule,
+      };
+
+      const response = await axios.post(API_ENDPOINTS.ORDER.CREATE_MATERIAL, dto);
+
+      if (response.status === 201 || response.status === 200) {
+        const orderData = response.data;
+
+        const confirmParams: Record<string, string> = {
+          deliveryMethod: deliveryMethod || '',
+          totalWeight: items.reduce((sum, item) => sum + item.quantity, 0).toString(),
+          orderId: orderData?.id?.toString() || '',
+          totalPoints: orderData?.points?.toString() || '0',
+        };
+
+        if (deliveryMethod === 'pickup') {
+          confirmParams.name = name;
+          confirmParams.phone = phone;
+          confirmParams.address = address;
+          confirmParams.date = formatDate(date);
+          confirmParams.timeSlot = timeSlot || '';
+        } else if (deliveryMethod === 'selfDelivery' && collectionPoint) {
+          confirmParams.pickupLocation = `${collectionPoint.name}: ${collectionPoint.address}`;
+
+          confirmParams.time = collectionPoint.time;
+        }
+        //extractTimeRange(collectionPoint.time)
+        router.push({
+          pathname: '/screen/confirmation',
+          params: confirmParams
+        });
+      } else {
+        Alert.alert('Lỗi', 'Không thể tạo đơn hàng. Vui lòng thử lại sau.');
+      }
+    } catch (error) {
+      console.error('Lỗi tạo đơn hàng:', error);
+      Alert.alert('Lỗi', 'Tạo đơn hàng thất bại. Vui lòng kiểm tra kết nối.');
+    } 
   };
 
   return (
@@ -141,16 +297,16 @@ export default function OrderDetailsScreen() {
               <TextInput
                 style={styles.input}
                 value={name}
-                onChangeText={setName}
-                placeholder="Mr Recycle"
+                editable={false}
+                selectTextOnFocus={false}
               />
               
               <Text style={styles.inputLabel}>Số điện thoại</Text>
               <TextInput
                 style={styles.input}
                 value={phone}
-                onChangeText={setPhone}
-                placeholder="0123456789"
+                editable={false}
+                selectTextOnFocus={false}
                 keyboardType="phone-pad"
               />
               
@@ -158,8 +314,8 @@ export default function OrderDetailsScreen() {
               <TextInput
                 style={styles.input}
                 value={address}
-                onChangeText={setAddress}
-                placeholder="Địa chỉ cụ thể"
+                editable={false}
+                selectTextOnFocus={false}
               />
               
               <Text style={styles.inputLabel}>Ngày đến thu gom</Text>
@@ -205,7 +361,7 @@ export default function OrderDetailsScreen() {
                 <Icon name="map-marker" size={20} color="red" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Địa chỉ</Text>
-                  <Text style={styles.infoText}>LimLoop: 140/9/4 đường số 12, P.Bình Hưng</Text>
+                  <Text style={styles.infoText}>{collectionPoint?.address}</Text>
                 </View>
               </View>
               
@@ -213,7 +369,7 @@ export default function OrderDetailsScreen() {
                 <Icon name="clock-o" size={20} color="red" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Thời gian nhận</Text>
-                  <Text style={styles.infoText}>Thứ 2 - Thứ 6: 8h - 17h</Text>
+                  <Text style={styles.infoText}>{collectionPoint?.time}</Text>
                 </View>
               </View>
               

@@ -32,7 +32,9 @@ export default function ScheduleScreen() {
         id: item.id,
         name: item.name,
         description: item.description,
-        image: require('../../assets/images/logo2.png'),
+        image: item.imageUrl && item.imageUrl.trim() !== ''
+          ? { uri: item.imageUrl }
+          : require('../../assets/images/logo2.png'),
       }));
 
       setRecycleItems(types);

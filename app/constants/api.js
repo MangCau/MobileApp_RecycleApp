@@ -1,6 +1,6 @@
-//export const API_URL = "https://mobile-app-sms0.onrender.com";
+export const API_URL = "https://mobile-app-sms0.onrender.com";
 // Nếu test trên điện thoại thật: dùng IP LAN của máy tính
- export const API_URL = "http://192.168.137.1:3000";
+//export const API_URL = "http://192.168.137.1:3000";
 
 // Định nghĩa các endpoint
 export const API_ENDPOINTS = {
@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
   TYPE: {
     GET_ALL: `${API_URL}/api/v1/types`,
     GET_BY_ID: (id) => `${API_URL}/api/v1/types/${id}`,
+    GET_TYPE_BY_ID: (id) => `${API_URL}/api/v1/types/type/${id}`,
     CREATE: `${API_URL}/api/v1/types`,
     UPDATE: (id) => `${API_URL}/api/v1/types/${id}`,
     DELETE: (id) => `${API_URL}/api/v1/types/${id}`,
@@ -61,12 +62,14 @@ export const API_ENDPOINTS = {
     GET_SUMMARY: (userId) => `${API_URL}/api/v1/rewards/${userId}/summary`,
   },
   ORDER: {
-    CREATE_MATERIAL: `${API_URL}/api/v1/orders`,
+    CREATE_MATERIAL: `${API_URL}/api/v1/orders/material`,
     CREATE_REWARD: (userId) => `${API_URL}/api/v1/orders/reward/${userId}`,
     GET_ALL: (userId) => `${API_URL}/api/v1/orders?userId=${userId}`,
     GET_BY_ID: (id) => `${API_URL}/api/v1/orders/${id}`,
     UPDATE_STATUS: (id) => `${API_URL}/api/v1/orders/${id}/status`,
     GET_HIS_REWARD: (userId, status) => `${API_URL}/api/v1/orders/reward/${userId}?status=${status}`,
+    GET_HIS_MATERIAL: (userId, status) => `${API_URL}/api/v1/orders/material/${userId}?status=${status}`,
     GET_DETAIL_REWARD: (id) => `${API_URL}/api/v1/orders/reward/${id}/detail`,
+    GET_DETAIL_MATERIAL: (id) => `${API_URL}/api/v1/orders/material/${id}/detail`,
   }
 };

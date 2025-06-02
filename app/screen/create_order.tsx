@@ -28,6 +28,9 @@ export default function CreateOrderScreen() {
   const router = useRouter();
   const [collectionPoints, setCollectionPoints] = useState<{ id: number, address: string }[]>([]);
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  const [selectedRecycleItems, setSelectedRecycleItems] = useState<
+    { id: number; title: string; image: any }[]
+  >([]);
   const [showPointsModal, setShowPointsModal] = useState(false);
   const params = useLocalSearchParams();
   let selectedItems: number[] = [];
@@ -39,21 +42,6 @@ export default function CreateOrderScreen() {
   } catch (error) {
     console.error('Error parsing selectedItems:', error);
   }
-
-  // Dữ liệu mẫu cho vật liệu nhựa
-  const recycleItems = [
-    { id: 1, title: 'Nhựa', image: require('../../assets/images/logo2.png') },
-    { id: 2, title: 'Nhựa', image: require('../../assets/images/logo2.png') },
-    { id: 3, title: 'Nhựa', image: require('../../assets/images/logo2.png') },
-    { id: 4, title: 'Nhựa', image: require('../../assets/images/logo2.png') },
-    { id: 5, title: 'Nhựa', image: require('../../assets/images/logo2.png') },
-    { id: 6, title: 'Nhựa', image: require('../../assets/images/logo2.png') },
-  ];
-
-  // Lấy vật liệu đã chọn từ trang trước
-  const selectedRecycleItems = recycleItems.filter(item =>
-    selectedItems.includes(item.id)
-  );
 
   // State cho khối lượng của từng vật liệu
   const [weights, setWeights] = useState<WeightRecord>(() => {
@@ -67,19 +55,50 @@ export default function CreateOrderScreen() {
   // State cho modal chọn số kg
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [currentItemId, setCurrentItemId] = useState<number | null>(null);
-  const weightOptions = ['1', '2', '3', '4', '5', '10', '15', '20'];
+  const weightOptions = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '15', '20', '25', '30', '50'];
 
   // State cho hình ảnh
   const [image, setImage] = useState<string | null>(null);
 
   // State cho ghi chú
   const [note, setNote] = useState('');
+
+  const fetchSelectedRecycleItems = async (ids: number[]) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      if (!token) return;
+
+      const fetchedItems = await Promise.all(
+        ids.map(async (id) => {
+          const res = await axios.get(API_ENDPOINTS.TYPE.GET_TYPE_BY_ID(id), {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          return {
+            id,
+            title: res.data.name,
+            image: res.data.imageUrl && res.data.imageUrl.trim() !== ''
+              ? { uri: res.data.imageUrl }
+              : require('../../assets/images/logo2.png'),
+          };
+        })
+      );
+
+      setSelectedRecycleItems(fetchedItems);
+    } catch (error) {
+      console.error('Error fetching selected items:', error);
+    }
+  };
+
   const fetchCenters = async (
     setCollectionPoints: React.Dispatch<React.SetStateAction<{ id: number, address: string }[]>>,
     setSelectedPoint: React.Dispatch<React.SetStateAction<number | null>>
   ) => {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
+      const token = await AsyncStorage.getItem('access_token');
+      if (!token) {
+        console.error('No access token found');
+        return;
+      }
       const res = await axios.get(API_ENDPOINTS.CENTER.GET_ALL, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -102,6 +121,11 @@ export default function CreateOrderScreen() {
       console.error('Error fetching centers:', error);
     }
   };
+  useEffect(() => {
+    if (selectedItems.length > 0) {
+      fetchSelectedRecycleItems(selectedItems);
+    }
+  }, [selectedItems]);
   useEffect(() => {
     fetchCenters(setCollectionPoints, setSelectedPoint);
   }, []);
@@ -144,15 +168,31 @@ export default function CreateOrderScreen() {
   };
 
   const handleContinue = () => {
-    // Xử lý khi nhấn nút Tiếp
-    console.log('Weights:', weights);
-    console.log('Image:', image);
-    console.log('Collection Point:', getSelectedPointAddress());
-    console.log('Note:', note);
-    
-    // Chuyển đến trang order_details
-    router.push('/screen/order_details');
+    if (selectedPoint === null) {
+      console.error('Chưa chọn điểm thu gom');
+      return;
+    }
+    const selectedMaterials = selectedRecycleItems.map((item) => ({
+      ...item,
+      weight: weights[item.id] || '1',
+    }));
+
+    const orderData = {
+      materials: selectedMaterials,
+      image,
+      collectionPoint: getSelectedPointAddress(),
+      note,
+    };
+
+    router.push({
+      pathname: '/screen/order_details',
+      params: {
+        centerId: selectedPoint.toString(),
+        data: JSON.stringify(orderData),
+      },
+    });
   };
+
 
   // Render weight option item để tránh lỗi text strings
   const renderWeightOption = ({ item }: { item: string }) => (

@@ -8,7 +8,8 @@ import {
   ScrollView,
   FlatList,
   Image,
-  Alert
+  Alert,
+  ImageBackground,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,13 +40,13 @@ export const formatDateTime = (isoString: string): string => {
 const EmptyOrdersView = () => (
   <View style={styles.emptyOrdersContainer}>
     <Image
-      source={require('../../assets/images/favicon.png')}
+      source={require('../../assets/images/empty_bag.png')}
       style={styles.emptyOrdersImage}
       resizeMode="contain"
     />
     <Text style={styles.emptyOrdersTitle}>Chưa có lịch sử hoạt động</Text>
     <Text style={styles.emptyOrdersText}>
-      Hãy tham gia hoạt động tái chế cùng Greenify nhé!
+      Hãy tham gia hoạt động tái chế cùng Recycle App nhé!
     </Text>
   </View>
 );
@@ -55,11 +56,10 @@ export default function OrderHistoryScreen() {
   const [activeTab, setActiveTab] = useState<OrderStatus>('pending');
   const [hasOrders, setHasOrders] = useState(true); // Đổi thành true để hiển thị danh sách đơn hàng mẫu
   const [orders, setOrders] = useState<Order[]>([]);
-  const [userId, setUserId] = useState<number>(1);
 
   // Lọc đơn thu gom theo trạng thái hiện tại
   const filteredOrders = orders.filter(order => order.status === activeTab);
-  const fetchOrders = async (userId: number, status: OrderStatus) => {
+  const fetchOrders = async (status: OrderStatus) => {
     try {
       const token = await AsyncStorage.getItem('access_token');
       const userId = await AsyncStorage.getItem('user_id');
@@ -67,7 +67,7 @@ export default function OrderHistoryScreen() {
         Alert.alert('Lỗi', 'Bạn cần đăng nhập để xem lịch sử đơn hàng.');
         return;
       }
-      const res = await axios.get(API_ENDPOINTS.ORDER.GET_HIS_REWARD(userId, status));
+      const res = await axios.get(API_ENDPOINTS.ORDER.GET_HIS_MATERIAL(userId, status));
       const formatted = res.data.map((order: any) => ({
         id: order.id.toString(),
         code: order.code,
@@ -83,7 +83,7 @@ export default function OrderHistoryScreen() {
   };
 
   useEffect(() => {
-    fetchOrders(userId, activeTab);
+    fetchOrders(activeTab);
   }, [activeTab]);
   // Hàm chuyển đổi trạng thái sang tiếng Việt
   const getStatusText = (status: OrderStatus): string => {
@@ -114,7 +114,7 @@ export default function OrderHistoryScreen() {
           pathname: "/screen/order_detail_view" as any,
           params: {
             id: item.id,
-            code: item.code.includes('#') ? item.code : `LimLoop #${item.code}`,
+            code: item.code.includes('#') ? item.code : `#${item.code}`,
             date: item.datetime,
             status: item.status,
             deliveryMethod: parseInt(item.id) % 2 === 0 ? 'pickup' : 'selfDelivery'
@@ -122,8 +122,9 @@ export default function OrderHistoryScreen() {
         });
       }}
     >
+      
       <View style={styles.orderIconContainer}>
-        <Icon name="minus" size={20} color="#067F38" />
+        <Icon name="gift" size={24} color="#067F38" />
       </View>
 
       <View style={styles.orderContent}>
@@ -345,4 +346,5 @@ const styles = StyleSheet.create({
     color: '#666666',
     lineHeight: 22,
   },
+  
 }); 

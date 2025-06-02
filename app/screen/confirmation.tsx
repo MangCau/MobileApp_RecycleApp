@@ -24,6 +24,7 @@ export default function ConfirmationScreen() {
   const timeSlot = params.timeSlot as string;
   const pickupLocation = params.pickupLocation as string;
   const totalWeight = params.totalWeight || '3'; // Mặc định 3kg
+  const totalPoints = params.totalPoints as string;
   
   // Định dạng khung giờ
   const formatTimeSlot = (slot: string) => {
@@ -86,7 +87,7 @@ export default function ConfirmationScreen() {
             <View style={styles.divider} />
             
             <Text style={styles.pointsInfo}>
-              Bạn sẽ được nhận 200 P{'\n'}
+              Bạn sẽ được nhận {totalPoints} P{'\n'}
               sau khi đơn hoàn thành
             </Text>
           </View>
