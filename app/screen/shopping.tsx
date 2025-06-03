@@ -9,9 +9,10 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
-  Alert
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -37,6 +38,7 @@ export default function ShoppingScreen() {
 
   const fetchRewards = async () => {
     try {
+      setLoading(true);
       const token = await AsyncStorage.getItem('access_token');
       const userId = await AsyncStorage.getItem('user_id');
 
@@ -45,7 +47,7 @@ export default function ShoppingScreen() {
         return;
       }
 
-      const response = await axios.get(API_ENDPOINTS.REWARD.GET_ALL + `?userId=${userId}`, {
+      const response = await axiosInstance.get(API_ENDPOINTS.REWARD.GET_ALL + `?userId=${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -176,16 +178,22 @@ export default function ShoppingScreen() {
         </View>
 
         {/* Danh sách sản phẩm */}
-        <FlatList
-          data={filteredProducts}
-          renderItem={renderProduct}
-          keyExtractor={item => item.id.toString()}
-          numColumns={2}
-          columnWrapperStyle={styles.productRow}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          scrollEnabled={false}
-          
-        />
+        {loading ? (
+          <View style={styles.spinnerContainer}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredProducts}
+            renderItem={renderProduct}
+            keyExtractor={item => item.id.toString()}
+            numColumns={2}
+            columnWrapperStyle={styles.productRow}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            scrollEnabled={false}
+          />
+        )}
       </ScrollView>
       <View style={styles.footer}>
         <MenuBar />
@@ -306,5 +314,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#eee',
     backgroundColor: '#fff',
+  },
+  spinnerContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 });

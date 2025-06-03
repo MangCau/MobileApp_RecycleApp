@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${API_URL}/auth/signin`,
     REGISTER: `${API_URL}/auth/signup`,
+    REFRESH: `${API_URL}/auth/refresh`,
     VERIFY_TOKEN: `${API_URL}/api/auth/verify-token`,
   },
   // User endpoints

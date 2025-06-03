@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
@@ -50,7 +51,7 @@ export default function DroppointDetail() {
           Alert.alert('Lỗi', 'Không tìm thấy thông tin người dùng hoặc token');
           return;
         }
-        const res = await axios.get(API_ENDPOINTS.CENTER.GET_BY_ID(id));
+        const res = await axiosInstance.get(API_ENDPOINTS.CENTER.GET_BY_ID(id));
         return res.data;
       } catch (error) {
         console.error("Lỗi khi fetch center:", error);

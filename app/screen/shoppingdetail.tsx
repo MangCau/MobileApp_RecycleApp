@@ -1,5 +1,5 @@
 import React, { useState,useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
@@ -34,7 +34,7 @@ export default function ShoppingDetail() {
         return;
       }
 
-      const res = await axios.get(API_ENDPOINTS.REWARD.GET_BY_ID(id, userId), {
+      const res = await axiosInstance.get(API_ENDPOINTS.REWARD.GET_BY_ID(id, userId), {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProduct(res.data);
@@ -85,7 +85,7 @@ export default function ShoppingDetail() {
         return;
       }
 
-      await axios.post(API_ENDPOINTS.CART.ADD(userId), {
+      await axiosInstance.post(API_ENDPOINTS.CART.ADD(userId), {
         rewardId: product?.id,
       }, {
         headers: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, Dimensions, ActivityIndicator } from 'react-native';
@@ -27,7 +27,7 @@ export default function ShoppingBag() {
       const token = await AsyncStorage.getItem('access_token');
       const userId = await AsyncStorage.getItem('user_id');
       if (!token || !userId) {setIsLoading(false); return;}
-      const res = await axios.get(API_ENDPOINTS.CART.GET_SUMMARY(Number(userId)), {
+      const res = await axiosInstance.get(API_ENDPOINTS.CART.GET_SUMMARY(Number(userId)), {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserPoints(res.data.Points);
@@ -54,7 +54,7 @@ export default function ShoppingBag() {
       : API_ENDPOINTS.CART.DECREASE(Number(userId));
 
     try {
-      await axios.patch(endpoint, { rewardId }, {
+      await axiosInstance.patch(endpoint, { rewardId }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -70,7 +70,7 @@ export default function ShoppingBag() {
       const userId = await AsyncStorage.getItem('user_id');
       if (!token || !userId) return;
 
-      await axios.post(API_ENDPOINTS.ORDER.CREATE_REWARD(userId), {}, {
+      await axiosInstance.post(API_ENDPOINTS.ORDER.CREATE_REWARD(userId), {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

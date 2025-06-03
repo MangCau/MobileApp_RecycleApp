@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -72,7 +72,7 @@ export default function OrderDetailViewScreen() {
         return;
       }
 
-      const res = await axios.get(API_ENDPOINTS.ORDER.GET_DETAIL_MATERIAL(orderId), {
+      const res = await axiosInstance.get(API_ENDPOINTS.ORDER.GET_DETAIL_MATERIAL(orderId), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

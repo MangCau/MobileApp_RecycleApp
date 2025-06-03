@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MenuBar from '../components/menubar';
 import { useRouter } from 'expo-router';
@@ -18,11 +18,13 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [recycleItems, setRecycleItems] = useState<RecycleItem[]>([]);
-  
+  const [loading, setLoading] = useState(true);
+
   const fetchRecycleTypes = async (setRecycleItems: (items: RecycleItem[]) => void) => {
     try {
+      setLoading(true);
       const token = await AsyncStorage.getItem('access_token');
-      const response = await axios.get(`${API_ENDPOINTS.TYPE.GET_ALL}`, {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.TYPE.GET_ALL}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,7 +42,9 @@ export default function ScheduleScreen() {
       setRecycleItems(types);
     } catch (error) {
       console.error('Error fetching recycle items:', error);
-    }
+    } finally {
+    setLoading(false);
+  }
   };
   
 
@@ -94,38 +98,43 @@ export default function ScheduleScreen() {
           <Text style={styles.pointsLink}>Cách quy đổi điểm</Text>
         </TouchableOpacity>
       </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.cardsGrid}>
-          {recycleItems.map((item) => {
-            const isSelected = selectedItems.includes(item.id);
-            return (
-              <TouchableOpacity 
-                key={item.id} 
-                style={[
-                  styles.card,
-                  isSelected && styles.selectedCard
-                ]}
-                onPress={() => toggleItemSelection(item.id)}
-              >
-                <Image 
-                  source={item.image} 
-                  style={styles.cardImage}
-                  resizeMode="contain"
-                />
-                <Text style={styles.cardTitle}>{item.name}</Text>
-                <Text style={styles.cardDescription}>{item.description}</Text>
-                {isSelected && (
-                  <View style={styles.checkmark}>
-                    <Icon name="check" size={12} color="#ffffff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+      {loading ? (
+        <View style={styles.spinnerContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
         </View>
-      </ScrollView>
-
+      ) : (
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.cardsGrid}>
+            {recycleItems.map((item) => {
+              const isSelected = selectedItems.includes(item.id);
+              return (
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={[
+                    styles.card,
+                    isSelected && styles.selectedCard
+                  ]}
+                  onPress={() => toggleItemSelection(item.id)}
+                >
+                  <Image 
+                    source={item.image} 
+                    style={styles.cardImage}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  <Text style={styles.cardDescription}>{item.description}</Text>
+                  {isSelected && (
+                    <View style={styles.checkmark}>
+                      <Icon name="check" size={12} color="#ffffff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </ScrollView>
+      )}
         <TouchableOpacity 
           style={[
             styles.recycleButton,
@@ -277,5 +286,16 @@ const styles = StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderColor: '#ddd',
+  },
+  spinnerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 50,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 });

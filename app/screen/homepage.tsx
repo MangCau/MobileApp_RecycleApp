@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -31,7 +31,7 @@ export default function HomeScreen() {
       }
       if (!userId) throw new Error('User ID not found');
 
-      const response = await axios.get(API_ENDPOINTS.USER.GET_STAT(userId), {
+      const response = await axiosInstance.get(API_ENDPOINTS.USER.GET_STAT(userId), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

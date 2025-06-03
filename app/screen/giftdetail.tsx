@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import { API_ENDPOINTS } from '../constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, Image, ActivityIndicator } from 'react-native';
@@ -43,7 +43,7 @@ export default function GiftDetail() {
     const userId = await AsyncStorage.getItem('user_id');
     if (!token || !userId) throw new Error('Chưa đăng nhập');
 
-    const res = await axios.get(API_ENDPOINTS.ORDER.GET_DETAIL_REWARD(orderId), {
+    const res = await axiosInstance.get(API_ENDPOINTS.ORDER.GET_DETAIL_REWARD(orderId), {
       headers: { Authorization: `Bearer ${token}` },
     });
 

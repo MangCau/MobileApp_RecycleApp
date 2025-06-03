@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import { API_ENDPOINTS } from '../constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Pressable, Modal, Alert } from 'react-native';
@@ -55,7 +56,7 @@ export default function HomeScreen() {
         return;
       }
 
-      const response = await axios.get(API_ENDPOINTS.USER.GET_BY_ID(userId), {
+      const response = await axiosInstance.get(API_ENDPOINTS.USER.GET_BY_ID(userId), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

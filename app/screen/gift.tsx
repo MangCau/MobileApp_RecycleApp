@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ImageBackground, ActivityIndicator } from 'react-native';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import { API_ENDPOINTS } from '../constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -35,7 +35,7 @@ export default function GiftScreen() {
         console.error('Token not found');
         return;
       }
-      const response = await axios.get(`${API_ENDPOINTS.ORDER.GET_HIS_REWARD(userId, status)}`, {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.ORDER.GET_HIS_REWARD(userId, status)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

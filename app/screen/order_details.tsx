@@ -10,7 +10,7 @@ import {
   SafeAreaView,
   Alert
 } from 'react-native';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../constants/api';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -96,7 +96,7 @@ export default function OrderDetailsScreen() {
         return;
       }
 
-      const res = await axios.get(API_ENDPOINTS.USER.GET_BY_ID(id), {
+      const res = await axiosInstance.get(API_ENDPOINTS.USER.GET_BY_ID(id), {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -120,7 +120,7 @@ export default function OrderDetailsScreen() {
         console.error('Không tìm thấy access token');
         return;
       }
-      const res = await axios.get(API_ENDPOINTS.CENTER.GET_BY_ID(centerId));
+      const res = await axiosInstance.get(API_ENDPOINTS.CENTER.GET_BY_ID(centerId));
       const center = res.data;
 
       if (!center) {
@@ -211,7 +211,7 @@ export default function OrderDetailsScreen() {
         schedule,
       };
 
-      const response = await axios.post(API_ENDPOINTS.ORDER.CREATE_MATERIAL, dto);
+      const response = await axiosInstance.post(API_ENDPOINTS.ORDER.CREATE_MATERIAL, dto);
 
       if (response.status === 201 || response.status === 200) {
         const orderData = response.data;

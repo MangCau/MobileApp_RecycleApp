@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Image, ImageBackground, TextInput, Alert} from 'react-native';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import { API_ENDPOINTS } from '../constants/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MenuBar from '../components/menubar';
@@ -54,7 +54,7 @@ export default function HomeScreen() {
         throw new Error('Missing token or user ID');
       }
 
-      const res = await axios.get(API_ENDPOINTS.CENTER.GET_ALL, {
+      const res = await axiosInstance.get(API_ENDPOINTS.CENTER.GET_ALL, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

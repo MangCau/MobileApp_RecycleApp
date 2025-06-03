@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,7 +21,7 @@ export default function LoginScreen() {
     }
 
     try {
-      const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, {
+      const response = await axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, {
         tel: phoneNumber,
         password: password,
       });

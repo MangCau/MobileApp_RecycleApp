@@ -13,7 +13,7 @@ import {
   SafeAreaView
 } from 'react-native';
 import { API_ENDPOINTS } from '../constants/api';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -70,7 +70,7 @@ export default function CreateOrderScreen() {
 
       const fetchedItems = await Promise.all(
         ids.map(async (id) => {
-          const res = await axios.get(API_ENDPOINTS.TYPE.GET_TYPE_BY_ID(id), {
+          const res = await axiosInstance.get(API_ENDPOINTS.TYPE.GET_TYPE_BY_ID(id), {
             headers: { Authorization: `Bearer ${token}` },
           });
           return {
@@ -99,7 +99,7 @@ export default function CreateOrderScreen() {
         console.error('No access token found');
         return;
       }
-      const res = await axios.get(API_ENDPOINTS.CENTER.GET_ALL, {
+      const res = await axiosInstance.get(API_ENDPOINTS.CENTER.GET_ALL, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -3,8 +3,25 @@ import "./global.css";
 import { Text, TouchableOpacity, View, ImageBackground } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { StatusBar } from 'expo-status-bar';
+import * as Sentry from '@sentry/react-native';
 
-export default function Layout() {
+Sentry.init({
+  dsn: "https://d37c7080e868e61c1d7c5d147b11f572@o4509430117957632.ingest.de.sentry.io/4509432375214160",
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
+
+export default Sentry.wrap(function Layout() {
 
   const router = useRouter();
 
@@ -173,4 +190,4 @@ export default function Layout() {
         </Stack>
       </View>
   );
-}
+});

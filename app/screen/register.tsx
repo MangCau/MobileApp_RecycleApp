@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../constants/axiosInstance';
 import { API_ENDPOINTS } from '../constants/api';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, 
         ScrollView, KeyboardAvoidingView, Platform, Modal, Pressable, Keyboard, TouchableWithoutFeedback } from 'react-native';
@@ -66,7 +66,7 @@ export default function LoginScreen() {
     }
 
     try {
-      await axios.post(API_ENDPOINTS.AUTH.REGISTER, {
+      await axiosInstance.post(API_ENDPOINTS.AUTH.REGISTER, {
         email: email,
         password: password,
         name: name,
