@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "something",
+    "name": "Recycle App",
     "slug": "something",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo3.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,9 +13,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo3.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.minhle2212044.something"
     },
     "web": {
       "bundler": "metro",
@@ -36,7 +37,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "ae8ab465-208a-4573-97a6-7168219e3fed"
+      }
     }
-    
   }
 }
